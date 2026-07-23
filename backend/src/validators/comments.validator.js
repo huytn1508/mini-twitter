@@ -7,6 +7,7 @@ const createCommentSchema = Joi.object({
       'string.max': 'Bình luận không được vượt quá 280 ký tự',
       'any.required': 'Nội dung bình luận là bắt buộc',
     }),
+  parent_comment_id: Joi.number().integer().allow(null).optional(),
 });
 
 module.exports = { createCommentSchema };

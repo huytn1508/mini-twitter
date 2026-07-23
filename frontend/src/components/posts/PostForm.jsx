@@ -168,6 +168,7 @@ export default function PostForm({ onPostCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const validationError = validatePostContent(content);
     const hasMedia = images.length > 0 || !!gifUrl || !!video;
     if (validationError && !hasMedia) { setError(validationError); return; }
     if (!content.trim() && !hasMedia) { setError('Vui lòng nhập nội dung hoặc thêm ảnh/video/GIF'); return; }

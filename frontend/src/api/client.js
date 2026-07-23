@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://mini-twitter-api-c149.onrender.com' : '/api');
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://mini-twitter-api-c149.onrender.com/api' : '/api');
 
 const client = axios.create({
   baseURL: API_BASE,

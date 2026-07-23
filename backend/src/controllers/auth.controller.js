@@ -199,11 +199,19 @@ async function resetPassword(req, res, next) {
 /**
  * POST /api/auth/check-email
  * Kiểm tra email đã đăng ký chưa (query bảng auth.users qua raw SQL)
+ * Đồng thời từ chối email rác/domain tạm.
  */
 async function checkEmail(req, res, next) {
   try {
     const { email } = req.body;
     if (!email) return res.json({ exists: false });
+
+    // Từ chối domain email rác/tạm
+    const { isDisposableEmail } = require('../utils/disposable-domains');
+    const check = isDisposableEmail(email);
+    if (check.blocked) {
+      return res.json({ exists: true, disposable: true, message: `"${check.domain}" là email tạm, vui lòng dùng email thật` });
+    }
 
     // Query auth.users qua schema auth
     const { data, error } = await supabaseAdmin.rpc('check_email_exists', { email_input: email.toLowerCase() });

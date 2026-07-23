@@ -1,11 +1,21 @@
 const Joi = require('joi');
+const { isDisposableEmail } = require('../utils/disposable-domains');
+
+// Custom Joi extension: từ chối domain email tạm/rác
+const emailValidator = Joi.string().email().required().max(255).custom((value, helpers) => {
+  const { blocked, domain } = isDisposableEmail(value);
+  if (blocked) {
+    return helpers.error('email.disposable', { domain });
+  }
+  return value;
+}).messages({
+  'string.email': 'Email không hợp lệ',
+  'any.required': 'Email là bắt buộc',
+  'email.disposable': '"{{#domain}}" là email tạm, vui lòng dùng email thật',
+});
 
 const registerSchema = Joi.object({
-  email: Joi.string().email().required().max(255)
-    .messages({
-      'string.email': 'Email không hợp lệ',
-      'any.required': 'Email là bắt buộc',
-    }),
+  email: emailValidator,
   password: Joi.string().min(6).max(128).required()
     .messages({
       'string.min': 'Mật khẩu phải có ít nhất 6 ký tự',

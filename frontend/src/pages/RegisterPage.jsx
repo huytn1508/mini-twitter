@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { HiCheckCircle, HiXCircle } from 'react-icons/hi';
 import { useAuth } from '../context/AuthContext';
-import { validatePassword, validateUsername, validateDisplayName } from '../utils/validators';
+import { validatePassword, validateUsername, validateDisplayName, validateEmail, detectEmailTypo } from '../utils/validators';
 import client from '../api/client';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Regex chặt: TLD ít nhất 2 chữ cái, domain phải có dấu chấm
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export default function RegisterPage() {
   const { register, login: authLogin } = useAuth();
@@ -19,16 +20,27 @@ export default function RegisterPage() {
   const [emailFormatOk, setEmailFormatOk] = useState(false);
   const [emailExists, setEmailExists] = useState(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [emailSuggestion, setEmailSuggestion] = useState(null);
 
   const handleChange = (field) => (e) => {
     setForm(prev => ({ ...prev, [field]: e.target.value }));
     setErrors(prev => ({ ...prev, [field]: null }));
   };
 
+  const applySuggestion = () => {
+    if (emailSuggestion) {
+      setForm(prev => ({ ...prev, email: emailSuggestion }));
+      setEmailSuggestion(null);
+    }
+  };
+
   // Validate email format real-time
   useEffect(() => {
     setEmailFormatOk(EMAIL_REGEX.test(form.email));
     setEmailExists(null);
+    // Phát hiện lỗi chính tả domain
+    const typo = detectEmailTypo(form.email);
+    setEmailSuggestion(typo.suggestion);
   }, [form.email]);
 
   // Check email đã tồn tại sau 500ms ngừng gõ
@@ -38,7 +50,12 @@ export default function RegisterPage() {
       setCheckingEmail(true);
       try {
         const res = await client.post('/auth/check-email', { email: form.email });
-        setEmailExists(res.data.exists);
+        // Nếu là email rác/tạm, coi như đã tồn tại để chặn
+        if (res.data.disposable) {
+          setEmailExists(true);
+        } else {
+          setEmailExists(res.data.exists);
+        }
       } catch { setEmailExists(null); }
       finally { setCheckingEmail(false); }
     }, 500);
@@ -120,6 +137,12 @@ export default function RegisterPage() {
               {errors.email && <p className="text-rose-500 text-xs mt-1 flex items-center gap-1"><HiXCircle className="w-3 h-3" /> {errors.email}</p>}
               {!errors.email && form.email && emailFormatOk && !checkingEmail && emailExists === false && (
                 <p className="text-green-600 text-xs mt-1 flex items-center gap-1"><HiCheckCircle className="w-3 h-3" /> Email hợp lệ</p>
+              )}
+              {/* Gợi ý sửa lỗi chính tả domain */}
+              {emailSuggestion && emailFormatOk && (
+                <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
+                  <span>Ý bạn là <button type="button" onClick={applySuggestion} className="font-bold underline hover:text-amber-700">{emailSuggestion}</button>?</span>
+                </p>
               )}
             </div>
 

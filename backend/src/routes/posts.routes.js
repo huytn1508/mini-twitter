@@ -12,7 +12,7 @@ router.get('/', optionalAuth, postsController.getAll);
 router.get('/following', authenticate, postsController.getFollowing);
 
 // POST /api/posts — Tạo bài viết
-router.post('/', authenticate, upload.single('image'), validate(createPostSchema, 'body'), postsController.create);
+router.post('/', authenticate, upload.array('images', 4), validate(createPostSchema, 'body'), postsController.create);
 
 // POST /api/posts/:id/retweet
 router.post('/:id/retweet', authenticate, postsController.retweet);

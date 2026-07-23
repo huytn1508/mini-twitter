@@ -56,6 +56,7 @@ async function getAll(req, res, next) {
         likes (user_id),
         comments (id)
       `, { count: 'exact' })
+      .eq('is_published', true)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -66,6 +67,8 @@ async function getAll(req, res, next) {
       id: post.id,
       content: post.content,
       image_url: post.image_url,
+      images: post.images || [],
+      is_sensitive: post.is_sensitive || false,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -171,14 +174,19 @@ async function getFollowing(req, res, next) {
  */
 async function create(req, res, next) {
   try {
+    // Upload nhiều ảnh nếu có
     let imageUrl = null;
-
-    // Upload ảnh nếu có
-    if (req.file) {
-      imageUrl = await uploadImage(req.file);
+    const images = [];
+    if (req.files?.length > 0) {
+      for (const file of req.files) {
+        const url = await uploadImage(file);
+        images.push(url);
+      }
+      imageUrl = images[0]; // Backward compat
     }
 
-    const { content } = req.body;
+    const { content, is_sensitive, scheduled_at } = req.body;
+    const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
 
     const { data: post, error } = await supabaseAdmin
       .from('posts')
@@ -186,6 +194,10 @@ async function create(req, res, next) {
         user_id: req.user.id,
         content,
         image_url: imageUrl,
+        images: images.length > 0 ? images : null,
+        is_sensitive: is_sensitive === 'true' || is_sensitive === true,
+        scheduled_at: scheduled_at || null,
+        is_published: !isScheduled,
       })
       .select(`
         *,

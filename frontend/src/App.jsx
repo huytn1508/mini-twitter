@@ -9,6 +9,9 @@ import NotFoundPage from './pages/NotFoundPage';
 import HashtagPage from './pages/HashtagPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ExplorePage from './pages/ExplorePage';
+import MessagesPage from './pages/MessagesPage';
+import ChatPage from './pages/ChatPage';
 import Spinner from './components/ui/Spinner';
 
 // Guest route: chỉ cho user chưa login truy cập
@@ -46,6 +49,9 @@ function AppRoutes() {
       <Route path="/" element={<Layout><HomePage /></Layout>} />
       <Route path="/profile/:username" element={<Layout><ProfilePage /></Layout>} />
       <Route path="/hashtag/:tag" element={<Layout><HashtagPage /></Layout>} />
+      <Route path="/explore" element={<Layout><ExplorePage /></Layout>} />
+      <Route path="/messages" element={<Layout><MessagesPage /></Layout>} />
+      <Route path="/messages/:id" element={<Layout><ChatPage /></Layout>} />
 
       {/* Guest routes */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />

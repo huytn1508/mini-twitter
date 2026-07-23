@@ -12,6 +12,8 @@ const followsRoutes = require('./routes/follows.routes');
 const usersRoutes = require('./routes/users.routes');
 const hashtagsRoutes = require('./routes/hashtags.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
+const chatRoutes = require('./routes/chat.routes');
+const cronController = require('./controllers/cron.controller');
 
 const app = express();
 
@@ -68,6 +70,9 @@ app.use('/api/users', usersRoutes);
 app.use('/api/hashtags', hashtagsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.get('/api/trending', require('./controllers/hashtags.controller').getTrending);
+app.use('/api/chat', chatRoutes);
+app.get('/api/cron/publish-scheduled', cronController.publishScheduled);
+app.get('/api/search', require('./controllers/hashtags.controller').searchPosts);
 
 // ─── Error Handler ────────────────────────────────────────
 app.use(errorHandler);

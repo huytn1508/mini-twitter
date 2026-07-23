@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HiOutlineHeart, HiHeart, HiOutlineChat, HiOutlineTrash, HiSwitchHorizontal } from 'react-icons/hi';
+import { HiOutlineHeart, HiHeart, HiOutlineChat, HiOutlineTrash, HiSwitchHorizontal, HiOutlineExclamationCircle } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import { likesAPI } from '../../api/likes';
 import { postsAPI } from '../../api/posts';
@@ -9,6 +9,24 @@ import Avatar from '../ui/Avatar';
 import CommentList from '../comments/CommentList';
 import CommentForm from '../comments/CommentForm';
 import PostContent from './PostContent';
+
+/** Component bọc ảnh nhạy cảm với blur + overlay */
+function SensitiveWrapper({ isSensitive, children }) {
+  const [revealed, setRevealed] = useState(false);
+  if (!isSensitive) return children;
+  return (
+    <div className="relative" onClick={() => setRevealed(!revealed)}>
+      <div className={revealed ? '' : 'blur-xl select-none pointer-events-none'}>{children}</div>
+      {!revealed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 rounded-xl cursor-pointer">
+          <HiOutlineExclamationCircle className="w-8 h-8 text-white mb-2" />
+          <span className="text-white text-sm font-semibold">Nội dung nhạy cảm</span>
+          <span className="text-white/70 text-xs mt-1">Nhấn để xem</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
@@ -105,10 +123,20 @@ export default function PostCard({ post, onUpdate, onDelete }) {
           {/* Content (for quote: show caption + embedded original) */}
           {post.content && <PostContent content={post.content} />}
 
-          {/* Image */}
-          {post.image_url && (
-            <img src={post.image_url} alt="Post"
-              className="mt-3 rounded-xl max-h-96 w-full object-cover border border-neutral-100" loading="lazy" />
+          {/* Images (multi-image grid) */}
+          {(post.images?.length > 0 || post.image_url) && (
+            <SensitiveWrapper isSensitive={post.is_sensitive}>
+              <div className={`grid gap-1.5 mt-3 ${
+                (post.images?.length || 1) === 1 ? 'grid-cols-1' : 'grid-cols-2'
+              }`}>
+                {(post.images?.length > 0 ? post.images : [post.image_url]).map((url, i) => (
+                  <img key={i} src={url} alt=""
+                    className={`rounded-xl w-full object-cover border border-neutral-100 ${
+                      (post.images?.length || 1) === 1 ? 'max-h-96' : 'max-h-64'
+                    }`} loading="lazy" />
+                ))}
+              </div>
+            </SensitiveWrapper>
           )}
 
           {/* Embedded original post (for retweet/quote) */}

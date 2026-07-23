@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HiOutlineHome, HiOutlineLogout, HiOutlineBell } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineLogout, HiOutlineBell, HiOutlineSearch, HiOutlineMail } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../ui/Avatar';
 import client from '../../api/client';
@@ -9,12 +9,16 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    const fetch = () => client.get('/notifications/unread-count').then(r => setUnreadCount(r.data.count)).catch(() => {});
+    const fetch = () => {
+      client.get('/notifications/unread-count').then(r => setUnreadCount(r.data.count)).catch(() => {});
+      client.get('/chat/unread-count').then(r => setChatUnread(r.data.count)).catch(() => {});
+    };
     fetch();
-    const interval = setInterval(fetch, 15000); // Poll mỗi 15s
+    const interval = setInterval(fetch, 10000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
@@ -38,6 +42,13 @@ export default function Navbar() {
             <>
               <Link to="/" className="p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Trang chủ">
                 <HiOutlineHome className="w-5 h-5" />
+              </Link>
+              <Link to="/explore" className="p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Khám phá">
+                <HiOutlineSearch className="w-5 h-5" />
+              </Link>
+              <Link to="/messages" className="relative p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Tin nhắn">
+                <HiOutlineMail className="w-5 h-5" />
+                {chatUnread > 0 && <span className="absolute -top-0.5 -right-0.5 bg-indigo-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{chatUnread > 9 ? '9+' : chatUnread}</span>}
               </Link>
               {/* Notification bell */}
               <Link to="/" className="relative p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Thông báo">

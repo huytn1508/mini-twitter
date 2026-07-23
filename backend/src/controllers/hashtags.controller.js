@@ -143,4 +143,29 @@ async function getTrending(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getPostsByTag, syncPostHashtags, extractHashtags, getTrending };
+/**
+ * GET /api/search?q=keyword
+ */
+async function searchPosts(req, res, next) {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json({ posts: [] });
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const offset = (page - 1) * limit;
+
+    const { data: posts, error, count } = await supabaseAdmin
+      .from('posts')
+      .select(`*, profiles:user_id (username, display_name, avatar_url), likes (user_id), comments (id)`, { count: 'exact' })
+      .eq('is_published', true)
+      .ilike('content', `%${q}%`)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    res.json({ posts: (posts || []).map(p => ({ id: p.id, content: p.content, image_url: p.image_url, created_at: p.created_at, user: { id: p.user_id, username: p.profiles?.username, display_name: p.profiles?.display_name, avatar_url: p.profiles?.avatar_url }, likes_count: p.likes?.length || 0, comments_count: p.comments?.length || 0 })), pagination: { page, limit, total: count, totalPages: Math.ceil(count / limit) } });
+  } catch (err) { next(err); }
+}
+
+module.exports = { getPostsByTag, syncPostHashtags, extractHashtags, getTrending, searchPosts };

@@ -38,34 +38,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-50 px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-baseline gap-0.5 select-none">
-            <span className="text-2xl font-bold text-indigo-600 tracking-tight">Mini</span>
-            <span className="text-2xl font-light text-neutral-400 tracking-tight">Twitter</span>
+            <span className="text-2xl font-bold text-primary-600 tracking-tight">Mini</span>
+            <span className="text-2xl font-light text-text-tertiary tracking-tight">Twitter</span>
           </Link>
-          <p className="text-neutral-500 text-sm mt-3">Đăng nhập để kết nối với mọi người</p>
+          <p className="text-text-secondary text-sm mt-3">Đăng nhập để kết nối với mọi người</p>
         </div>
 
         {/* Form */}
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-4">
             {apiError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3 rounded-xl">
+              <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 text-sm px-4 py-3 rounded-xl">
                 {apiError}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1.5">Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" placeholder="your@email.com" autoFocus />
               {errors.email && <p className="text-rose-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Mật khẩu</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1.5">Mật khẩu</label>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" placeholder="••••••" />
               {errors.password && <p className="text-rose-500 text-xs mt-1">{errors.password}</p>}
             </div>
@@ -76,11 +76,11 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-sm mt-3">
-            <Link to="/forgot-password" className="text-neutral-400 hover:text-indigo-600 transition-colors">Quên mật khẩu?</Link>
+            <Link to="/forgot-password" className="text-text-tertiary hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Quên mật khẩu?</Link>
           </p>
-          <p className="text-center text-sm text-neutral-500 mt-4">
+          <p className="text-center text-sm text-text-secondary mt-4">
             Chưa có tài khoản?{' '}
-            <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">Đăng ký</Link>
+            <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">Đăng ký</Link>
           </p>
         </div>
       </div>

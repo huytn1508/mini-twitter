@@ -8,12 +8,12 @@ import Spinner from '../components/ui/Spinner';
 
 /** Mô tả từng loại notification */
 const NOTIF_INFO = {
-  like:    { icon: HiHeart,               color: 'text-rose-500',  bg: 'bg-rose-50',  text: 'đã thích bài viết của bạn' },
-  comment: { icon: HiOutlineChat,         color: 'text-indigo-500', bg: 'bg-indigo-50', text: 'đã bình luận bài viết của bạn' },
-  retweet: { icon: HiSwitchHorizontal,    color: 'text-green-500',  bg: 'bg-green-50', text: 'đã retweet bài viết của bạn' },
-  quote:   { icon: HiSwitchHorizontal,    color: 'text-indigo-500', bg: 'bg-indigo-50', text: 'đã quote bài viết của bạn' },
-  follow:  { icon: HiUserAdd,             color: 'text-blue-500',   bg: 'bg-blue-50',  text: 'đã theo dõi bạn' },
-  mention: { icon: HiAtSymbol,            color: 'text-amber-500',  bg: 'bg-amber-50', text: 'đã nhắc đến bạn' },
+  like:    { icon: HiHeart,               color: 'text-rose-500',  bg: 'bg-rose-50 dark:bg-rose-500/10',  text: 'đã thích bài viết của bạn' },
+  comment: { icon: HiOutlineChat,         color: 'text-primary-600', bg: 'bg-primary-50 dark:bg-primary-900/20', text: 'đã bình luận bài viết của bạn' },
+  retweet: { icon: HiSwitchHorizontal,    color: 'text-emerald-500',  bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'đã retweet bài viết của bạn' },
+  quote:   { icon: HiSwitchHorizontal,    color: 'text-primary-600', bg: 'bg-primary-50 dark:bg-primary-900/20', text: 'đã quote bài viết của bạn' },
+  follow:  { icon: HiUserAdd,             color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-500/10',  text: 'đã theo dõi bạn' },
+  mention: { icon: HiAtSymbol,            color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'đã nhắc đến bạn' },
 };
 
 function relativeTime(ts) {
@@ -62,12 +62,12 @@ export default function NotificationsPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
+        <h1 className="text-lg font-bold text-text-primary flex items-center gap-2">
           <HiOutlineBell className="w-5 h-5" /> Thông báo
         </h1>
         {unreadCount > 0 && (
           <button onClick={markAllRead} disabled={markingAll}
-            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium px-3 py-1.5 hover:bg-indigo-50 rounded-lg transition-all">
+            className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium px-3 py-1.5 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all">
             {markingAll ? 'Đang xử lý...' : 'Đánh dấu tất cả đã đọc'}
           </button>
         )}
@@ -80,8 +80,8 @@ export default function NotificationsPage() {
       {!loading && notifs.length === 0 && (
         <div className="text-center py-20">
           <span className="text-5xl">🔔</span>
-          <h3 className="text-lg font-semibold text-neutral-700 mt-4">Chưa có thông báo nào</h3>
-          <p className="text-neutral-400 text-sm mt-1">Tương tác với mọi người để nhận thông báo</p>
+          <h3 className="text-lg font-semibold text-text-secondary mt-4">Chưa có thông báo nào</h3>
+          <p className="text-text-tertiary text-sm mt-1">Tương tác với mọi người để nhận thông báo</p>
         </div>
       )}
 
@@ -94,7 +94,9 @@ export default function NotificationsPage() {
             return (
               <div key={n.id}
                 className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
-                  n.is_read ? 'hover:bg-neutral-50' : 'bg-indigo-50/40 border-l-2 border-indigo-500'
+                  n.is_read
+                    ? 'hover:bg-surface-50 dark:hover:bg-surface-100'
+                    : 'bg-primary-50/40 dark:bg-primary-900/20 border-l-2 border-primary-500'
                 }`}>
                 {/* Icon */}
                 <div className={`w-8 h-8 rounded-full ${info.bg} flex items-center justify-center flex-shrink-0`}>
@@ -107,15 +109,15 @@ export default function NotificationsPage() {
                     {n.actor && (
                       <Link to={`/profile/${n.actor.username}`} className="flex items-center gap-1.5 hover:underline flex-shrink-0">
                         <Avatar src={n.actor.avatar_url} size="sm" />
-                        <span className="font-semibold text-sm text-neutral-900">{n.actor.display_name}</span>
+                        <span className="font-semibold text-sm text-text-primary">{n.actor.display_name}</span>
                       </Link>
                     )}
-                    <span className="text-sm text-neutral-500 truncate">{info.text}</span>
+                    <span className="text-sm text-text-secondary truncate">{info.text}</span>
                     {!n.is_read && (
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" title="Chưa đọc" />
+                      <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" title="Chưa đọc" />
                     )}
                   </div>
-                  <span className="text-xs text-neutral-400 mt-0.5 block">{relativeTime(n.created_at)}</span>
+                  <span className="text-xs text-text-tertiary mt-0.5 block">{relativeTime(n.created_at)}</span>
                 </div>
               </div>
             );

@@ -5,6 +5,7 @@ const { createNotification } = require('./notifications.controller');
  * Helper: extract @mentions from text, save to DB, create notifications
  */
 async function processMentions(text, userId, postId, commentId) {
+  if (!text) return;
   const matches = text.match(/@(\w+)/g);
   if (!matches) return;
   const usernames = [...new Set(matches.map(m => m.slice(1)))];

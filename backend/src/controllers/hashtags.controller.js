@@ -6,6 +6,7 @@ const enrichRetweets = require('../utils/enrichRetweets');
  * Returns array of lowercase tag names (without #)
  */
 function extractHashtags(text) {
+  if (!text) return [];
   const matches = text.match(/#(\w+)/g);
   if (!matches) return [];
   return [...new Set(matches.map(t => t.slice(1).toLowerCase()))];

@@ -132,8 +132,12 @@ async function getMe(req, res, next) {
 async function forgotPassword(req, res, next) {
   try {
     const { email } = req.body;
+    const redirectUrl = process.env.NODE_ENV === 'production'
+      ? 'https://mini-twitter-tau-rosy.vercel.app/reset-password'
+      : (process.env.FRONTEND_URL || 'http://localhost:5173') + '/reset-password';
+
     const { error } = await supabaseAnon.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`,
+      redirectTo: redirectUrl,
     });
 
     // Luôn trả về success để tránh lộ email có tồn tại hay không
@@ -149,14 +153,39 @@ async function forgotPassword(req, res, next) {
 /**
  * POST /api/auth/reset-password
  * Cập nhật mật khẩu mới (sau khi user click link email)
+ * Nhận session_hash từ URL để xác thực
  */
 async function resetPassword(req, res, next) {
   try {
-    const { password } = req.body;
+    const { password, session_hash } = req.body;
+
+    // Parse access_token từ URL hash
+    let accessToken = null;
+    let refreshToken = null;
+    if (session_hash) {
+      const hashParams = new URLSearchParams(session_hash.replace('#', ''));
+      accessToken = hashParams.get('access_token');
+      refreshToken = hashParams.get('refresh_token');
+    }
+
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Link không hợp lệ. Vui lòng thử lại.' });
+    }
+
+    // Set session từ access token rồi update password
+    const { error: sessionError } = await supabaseAnon.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+    });
+
+    if (sessionError) {
+      return res.status(400).json({ error: 'Link đã hết hạn. Vui lòng gửi lại yêu cầu.' });
+    }
+
     const { error } = await supabaseAnon.auth.updateUser({ password });
 
     if (error) {
-      return res.status(400).json({ error: 'Đặt lại mật khẩu thất bại. Link có thể đã hết hạn.' });
+      return res.status(400).json({ error: 'Đặt lại mật khẩu thất bại. Thử lại!' });
     }
 
     res.json({ message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập.' });

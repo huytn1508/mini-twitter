@@ -1,35 +1,119 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlineTrash, HiReply } from 'react-icons/hi';
 import { commentsAPI } from '../../api/comments';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../utils/formatDate';
 import Avatar from '../ui/Avatar';
-import { SkeletonPostList } from '../ui/SkeletonPost';
+import PostContent from '../posts/PostContent';
+
+function CommentItem({ comment, postId, onDeleted, depth = 0 }) {
+  const { user } = useAuth();
+  const [showReply, setShowReply] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [replying, setReplying] = useState(false);
+  const [showAllReplies, setShowAllReplies] = useState(false);
+
+  const handleReply = async (e) => {
+    e.preventDefault();
+    if (!replyContent.trim() || replying) return;
+    setReplying(true);
+    try {
+      await commentsAPI.create(postId, replyContent.trim(), comment.id);
+      setReplyContent('');
+      setShowReply(false);
+      onDeleted(); // Refresh list
+    } catch (err) { console.error('Reply failed:', err); }
+    finally { setReplying(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Xóa bình luận này?')) return;
+    try {
+      await commentsAPI.delete(postId, comment.id);
+      onDeleted();
+    } catch (err) { console.error('Delete failed:', err); }
+  };
+
+  const visibleReplies = showAllReplies ? comment.replies : (comment.replies || []).slice(0, 2);
+  const hiddenCount = (comment.replies || []).length - 2;
+
+  return (
+    <div className={`${depth > 0 ? 'ml-6 pl-4 border-l-2 border-neutral-200' : ''}`}>
+      <div className="flex gap-2">
+        <Link to={`/profile/${comment.user?.username}`} className="flex-shrink-0">
+          <Avatar src={comment.user?.avatar_url} size="sm" />
+        </Link>
+        <div className="flex-1 min-w-0">
+          <div className="bg-neutral-50 rounded-xl px-3 py-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link to={`/profile/${comment.user?.username}`} className="text-sm font-semibold text-neutral-900 hover:underline">
+                {comment.user?.display_name}
+              </Link>
+              <span className="text-xs text-neutral-400">{formatDate(comment.created_at)}</span>
+            </div>
+            <PostContent content={comment.content} className="text-sm text-neutral-700 mt-0.5 leading-relaxed whitespace-pre-wrap break-words" />
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 mt-0.5 ml-1">
+            {user && (
+              <button onClick={() => setShowReply(!showReply)}
+                className="text-xs text-neutral-400 hover:text-indigo-600 transition-colors flex items-center gap-1">
+                <HiReply className="w-3 h-3" /> Trả lời
+              </button>
+            )}
+            {user?.id === comment.user?.id && (
+              <button onClick={handleDelete}
+                className="text-xs text-neutral-400 hover:text-rose-500 transition-colors flex items-center gap-1">
+                <HiOutlineTrash className="w-3 h-3" /> Xóa
+              </button>
+            )}
+          </div>
+
+          {/* Inline reply form */}
+          {showReply && (
+            <form onSubmit={handleReply} className="flex gap-2 mt-2">
+              <input type="text" value={replyContent} onChange={e => setReplyContent(e.target.value)}
+                placeholder="Viết trả lời..." maxLength={280}
+                className="flex-1 px-3 py-1.5 text-xs border border-neutral-200 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-neutral-50" />
+              <button type="submit" disabled={!replyContent.trim() || replying}
+                className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-full font-medium hover:bg-indigo-700 disabled:opacity-50">
+                {replying ? '...' : 'Gửi'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+
+      {/* Nested replies */}
+      {visibleReplies.length > 0 && (
+        <div className="mt-2 space-y-2">
+          {visibleReplies.map(r => <CommentItem key={r.id} comment={r} postId={postId} onDeleted={onDeleted} depth={depth + 1} />)}
+          {hiddenCount > 0 && (
+            <button onClick={() => setShowAllReplies(true)}
+              className="text-xs text-indigo-600 hover:underline ml-6 pl-4">
+              Xem thêm {hiddenCount} trả lời
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CommentList({ postId, onCommentDeleted }) {
-  const { user } = useAuth();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
+  const fetchComments = () => {
     commentsAPI.getByPost(postId)
       .then(res => setComments(res.data.comments))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [postId]);
-
-  const handleDelete = async (commentId) => {
-    if (!window.confirm('Xóa bình luận này?')) return;
-    try {
-      await commentsAPI.delete(postId, commentId);
-      setComments(prev => prev.filter(c => c.id !== commentId));
-      onCommentDeleted?.();
-    } catch (err) {
-      console.error('Delete comment failed:', err);
-    }
   };
+
+  useEffect(() => { fetchComments(); }, [postId]);
 
   if (loading) {
     return (
@@ -37,51 +121,20 @@ export default function CommentList({ postId, onCommentDeleted }) {
         {[1, 2].map(i => (
           <div key={i} className="flex gap-2">
             <div className="w-8 h-8 rounded-full skeleton flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-4 w-32 skeleton" />
-              <div className="h-3 w-full skeleton" />
-            </div>
+            <div className="flex-1 space-y-2"><div className="h-4 w-32 skeleton" /><div className="h-3 w-full skeleton" /></div>
           </div>
         ))}
       </div>
     );
   }
 
-  if (comments.length === 0) {
-    return <p className="text-neutral-400 text-sm text-center py-4">Chưa có bình luận nào</p>;
-  }
+  if (comments.length === 0) return <p className="text-neutral-400 text-sm text-center py-4">Chưa có bình luận nào</p>;
+
+  const handleChange = () => { fetchComments(); onCommentDeleted?.(); };
 
   return (
-    <div className="space-y-3 max-h-80 overflow-y-auto">
-      {comments.map(comment => (
-        <div key={comment.id} className="flex gap-2">
-          <Link to={`/profile/${comment.user?.username}`} className="flex-shrink-0">
-            <Avatar src={comment.user?.avatar_url} size="sm" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <div className="bg-neutral-50 rounded-xl px-3 py-2.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Link
-                  to={`/profile/${comment.user?.username}`}
-                  className="text-sm font-semibold text-neutral-900 hover:underline"
-                >
-                  {comment.user?.display_name}
-                </Link>
-                <span className="text-xs text-neutral-400">{formatDate(comment.created_at)}</span>
-              </div>
-              <p className="text-sm text-neutral-700 mt-0.5 leading-relaxed">{comment.content}</p>
-            </div>
-            {user?.id === comment.user?.id && (
-              <button
-                onClick={() => handleDelete(comment.id)}
-                className="text-xs text-neutral-400 hover:text-rose-500 mt-1 ml-1 transition-colors"
-              >
-                <HiOutlineTrash className="w-3 h-3 inline" /> Xóa
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
+    <div className="space-y-3 max-h-96 overflow-y-auto">
+      {comments.map(c => <CommentItem key={c.id} comment={c} postId={postId} onDeleted={handleChange} />)}
     </div>
   );
 }

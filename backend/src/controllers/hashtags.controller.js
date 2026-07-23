@@ -108,4 +108,39 @@ async function getPostsByTag(req, res, next) {
   }
 }
 
-module.exports = { getPostsByTag, syncPostHashtags, extractHashtags };
+/**
+ * GET /api/trending?period=day|week
+ * Top 10 hashtag trong 24h hoặc 7 ngày
+ */
+async function getTrending(req, res, next) {
+  try {
+    const period = req.query.period === 'week' ? '7 days' : '1 day';
+
+    const { data, error } = await supabaseAdmin.rpc('get_trending', { period_interval: period });
+
+    if (error) {
+      // Fallback: query trực tiếp
+      const { data: fallback } = await supabaseAdmin
+        .from('post_hashtags')
+        .select(`hashtag_id, hashtags:hashtag_id (name)`)
+        .gte('created_at', new Date(Date.now() - (period === '7 days' ? 7 : 1) * 86400000).toISOString())
+        .limit(100);
+
+      if (fallback) {
+        const counts = {};
+        fallback.forEach(p => {
+          if (p.hashtags?.name) {
+            counts[p.hashtags.name] = (counts[p.hashtags.name] || 0) + 1;
+          }
+        });
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        return res.json({ trending: sorted.map(([name, count]) => ({ name, count })), period: req.query.period || 'day' });
+      }
+      return res.json({ trending: [], period: req.query.period || 'day' });
+    }
+
+    res.json({ trending: data || [], period: req.query.period || 'day' });
+  } catch (err) { next(err); }
+}
+
+module.exports = { getPostsByTag, syncPostHashtags, extractHashtags, getTrending };

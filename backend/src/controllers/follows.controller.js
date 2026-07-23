@@ -1,4 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
+const { createNotification } = require('./notifications.controller');
 
 /**
  * POST /api/users/:userId/follow
@@ -58,6 +59,9 @@ async function toggle(req, res, next) {
         }
         throw error;
       }
+
+      // Notify followed user
+      await createNotification({ userId: followingId, actorId: followerId, type: 'follow' });
 
       return res.json({ following: true, message: 'Đã follow' });
     }

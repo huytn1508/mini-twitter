@@ -1,11 +1,22 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HiOutlineHome, HiOutlineLogout } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineLogout, HiOutlineBell } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../ui/Avatar';
+import client from '../../api/client';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetch = () => client.get('/notifications/unread-count').then(r => setUnreadCount(r.data.count)).catch(() => {});
+    fetch();
+    const interval = setInterval(fetch, 15000); // Poll mỗi 15s
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();
@@ -14,7 +25,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-neutral-100 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-baseline gap-0.5 select-none">
           <span className="text-xl font-bold text-indigo-600 tracking-tight">Mini</span>
@@ -27,6 +38,15 @@ export default function Navbar() {
             <>
               <Link to="/" className="p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Trang chủ">
                 <HiOutlineHome className="w-5 h-5" />
+              </Link>
+              {/* Notification bell */}
+              <Link to="/" className="relative p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Thông báo">
+                <HiOutlineBell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
               <Link to={`/profile/${user.username}`} className="flex items-center gap-2 p-1.5 hover:bg-neutral-50 rounded-full transition-all pr-3">
                 <Avatar src={user.avatar_url} size="sm" />

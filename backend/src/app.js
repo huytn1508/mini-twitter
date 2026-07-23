@@ -11,6 +11,7 @@ const likesRoutes = require('./routes/likes.routes');
 const followsRoutes = require('./routes/follows.routes');
 const usersRoutes = require('./routes/users.routes');
 const hashtagsRoutes = require('./routes/hashtags.routes');
+const notificationsRoutes = require('./routes/notifications.routes');
 
 const app = express();
 
@@ -60,6 +61,8 @@ app.use('/api/posts', likesRoutes);     // nested: /api/posts/:postId/like
 app.use('/api/users', followsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/hashtags', hashtagsRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.get('/api/trending', require('./controllers/hashtags.controller').getTrending);
 
 // ─── Error Handler ────────────────────────────────────────
 app.use(errorHandler);

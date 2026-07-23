@@ -3,6 +3,7 @@ import { postsAPI } from '../api/posts';
 import { useAuth } from '../context/AuthContext';
 import PostForm from '../components/posts/PostForm';
 import PostList from '../components/posts/PostList';
+import TrendingSidebar from '../components/layout/TrendingSidebar';
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth();
@@ -48,7 +49,9 @@ export default function HomePage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Main content */}
+      <div className="flex-1 min-w-0">
       {/* Tab Bar */}
       <div className="flex border-b border-neutral-200 mb-5">
         <button
@@ -99,6 +102,12 @@ export default function HomePage() {
           <button onClick={handleLoadMore} className="btn-outline text-sm">Xem thêm</button>
         </div>
       )}
+      </div>{/* end main content */}
+
+      {/* Sidebar */}
+      <div className="hidden lg:block w-80 flex-shrink-0 space-y-4">
+        <TrendingSidebar />
+      </div>
     </div>
   );
 }

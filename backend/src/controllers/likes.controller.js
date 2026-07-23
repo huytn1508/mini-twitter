@@ -1,4 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
+const { createNotification } = require('./notifications.controller');
 
 /**
  * POST /api/posts/:postId/like
@@ -12,7 +13,7 @@ async function toggle(req, res, next) {
     // Kiểm tra post tồn tại
     const { data: post } = await supabaseAdmin
       .from('posts')
-      .select('id')
+      .select('id, user_id')
       .eq('id', postId)
       .single();
 
@@ -48,6 +49,11 @@ async function toggle(req, res, next) {
         });
 
       if (error) throw error;
+
+      // Notify post owner
+      if (post.user_id !== userId) {
+        await createNotification({ userId: post.user_id, actorId: userId, type: 'like', referenceId: parseInt(postId) });
+      }
 
       return res.json({ liked: true, message: 'Đã like' });
     }

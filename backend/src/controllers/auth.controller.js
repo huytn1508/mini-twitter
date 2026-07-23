@@ -83,6 +83,8 @@ async function login(req, res, next) {
     res.json({
       message: 'Đăng nhập thành công',
       token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_in: data.session.expires_in,
       user: {
         id: data.user.id,
         email: data.user.email,
@@ -220,4 +222,29 @@ async function checkEmail(req, res, next) {
   }
 }
 
-module.exports = { register, login, getMe, forgotPassword, resetPassword, checkEmail };
+/**
+ * POST /api/auth/refresh
+ * Làm mới access token từ refresh token
+ */
+async function refreshToken(req, res, next) {
+  try {
+    const { refresh_token } = req.body;
+    if (!refresh_token) return res.status(400).json({ error: 'Thiếu refresh token' });
+
+    const { data, error } = await supabaseAnon.auth.refreshSession({ refresh_token });
+
+    if (error) {
+      return res.status(401).json({ error: 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại' });
+    }
+
+    res.json({
+      token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_in: data.session.expires_in,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword, checkEmail, refreshToken };

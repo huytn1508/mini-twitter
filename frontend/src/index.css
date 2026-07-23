@@ -1,63 +1,279 @@
 @import "tailwindcss";
 
+/* ══════════════════════════════════════════════════════════════
+   MINI TWITTER — DESIGN SYSTEM v2
+   Inspired by X/Twitter with a refined blue-violet palette.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Theme tokens (Tailwind v4 @theme) ─────────────────────── */
+@theme {
+  /* Primary: X-inspired blue, slightly warmer */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+
+  /* Accent: warm violet — dùng cho highlight, badge, icon active */
+  --color-accent-50: #f5f3ff;
+  --color-accent-100: #ede9fe;
+  --color-accent-200: #ddd6fe;
+  --color-accent-300: #c4b5fd;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+  --color-accent-600: #7c3aed;
+  --color-accent-700: #6d28d9;
+
+  /* Semantic: Like — rose/red */
+  --color-like: #f43f5e;
+  --color-like-hover: #fb7185;
+  --color-like-bg: #fff1f2;
+
+  /* Semantic: Retweet — emerald/green */
+  --color-retweet: #10b981;
+  --color-retweet-hover: #34d399;
+  --color-retweet-bg: #ecfdf5;
+
+  /* Semantic: Comment — blue */
+  --color-comment: #3b82f6;
+  --color-comment-hover: #60a5fa;
+  --color-comment-bg: #eff6ff;
+
+  /* Semantic: Share/bookmark — amber */
+  --color-share: #f59e0b;
+  --color-share-hover: #fbbf24;
+
+  /* Surface colors (light mode) */
+  --color-surface-0: #ffffff;
+  --color-surface-50: #fafafa;
+  --color-surface-100: #f5f5f5;
+  --color-surface-200: #e5e5e5;
+  --color-surface-300: #d4d4d4;
+
+  /* Text hierarchy */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #94a3b8;
+  --color-text-placeholder: #94a3b8;
+
+  /* Border */
+  --color-border-light: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* Font family */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Font sizes — refined scale */
+  --text-xs: 0.75rem;    /* 12px — timestamp, badge */
+  --text-sm: 0.8125rem;  /* 13px — username, meta */
+  --text-base: 0.9375rem; /* 15px — post body */
+  --text-lg: 1.0625rem;  /* 17px — display name */
+  --text-xl: 1.25rem;    /* 20px — headings */
+  --text-2xl: 1.5rem;    /* 24px — page titles */
+
+  /* Border radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.03);
+  --shadow-card-hover: 0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 6px -1px rgb(0 0 0 / 0.04);
+  --shadow-dropdown: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 4px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-button: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* ── Dark mode CSS custom properties ──────────────────────── */
+.dark {
+  --color-surface-0: #0f172a;
+  --color-surface-50: #1e293b;
+  --color-surface-100: #334155;
+  --color-surface-200: #475569;
+  --color-surface-300: #64748b;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+  --color-text-placeholder: #64748b;
+  --color-border-light: #1e293b;
+  --color-border: #334155;
+  --color-border-strong: #475569;
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.2);
+  --shadow-card-hover: 0 4px 12px -2px rgb(0 0 0 / 0.3);
+  --shadow-dropdown: 0 10px 25px -5px rgb(0 0 0 / 0.4);
+  --shadow-button: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+}
+
+/* ── Base layer ───────────────────────────────────────────── */
 @layer base {
   body {
-    @apply min-h-screen text-neutral-900 antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #FAFAFA;
+    @apply min-h-screen antialiased;
+    font-family: var(--font-sans);
+    background-color: var(--color-surface-50);
+    color: var(--color-text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: var(--color-primary-200);
+    color: var(--color-primary-900);
+  }
+  .dark ::selection {
+    background-color: var(--color-primary-800);
+    color: var(--color-primary-100);
+  }
+
+  /* Focus ring — consistent across app */
+  :focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
+/* ── Component layer ──────────────────────────────────────── */
 @layer components {
-  /* ── Primary button (indigo accent) ── */
+  /* ═══ Primary button — gradient blue ═══ */
   .btn-primary {
-    @apply bg-indigo-600 text-white px-5 py-2.5 rounded-full font-medium text-sm
-           hover:bg-indigo-700 active:scale-[0.98]
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
-           transition-all duration-200 shadow-sm;
+    @apply bg-primary-600 text-white px-5 py-2.5 rounded-full font-semibold text-sm
+           hover:bg-primary-700 active:scale-[0.97]
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           transition-all duration-200;
+    box-shadow: var(--shadow-button), 0 0 0 0 rgb(37 99 235 / 0);
+  }
+  .btn-primary:not(:disabled):hover {
+    box-shadow: var(--shadow-button), 0 0 0 4px rgb(37 99 235 / 0.15);
   }
 
-  /* ── Outline / Ghost button ── */
+  /* ═══ Outline button ═══ */
   .btn-outline {
-    @apply border border-neutral-300 text-neutral-700 px-5 py-2.5 rounded-full font-medium text-sm
-           hover:bg-neutral-100 hover:border-neutral-400 active:scale-[0.98]
-           disabled:opacity-50 disabled:cursor-not-allowed
+    @apply border font-semibold text-sm px-5 py-2.5 rounded-full
+           hover:bg-surface-100 active:scale-[0.97]
+           disabled:opacity-40 disabled:cursor-not-allowed
            transition-all duration-200;
+    border-color: var(--color-border-strong);
+    color: var(--color-text-primary);
   }
 
-  /* ── Danger button ── */
+  /* ═══ Danger button ═══ */
   .btn-danger {
-    @apply bg-rose-500 text-white px-5 py-2.5 rounded-full font-medium text-sm
-           hover:bg-rose-600 active:scale-[0.98]
-           disabled:opacity-50 disabled:cursor-not-allowed
-           transition-all duration-200 shadow-sm;
-  }
-
-  /* ── Ghost button (no border) ── */
-  .btn-ghost {
-    @apply text-neutral-600 px-4 py-2 rounded-full font-medium text-sm
-           hover:bg-neutral-100 active:scale-[0.98]
-           disabled:opacity-50 disabled:cursor-not-allowed
+    @apply bg-rose-500 text-white px-5 py-2.5 rounded-full font-semibold text-sm
+           hover:bg-rose-600 active:scale-[0.97]
+           disabled:opacity-40 disabled:cursor-not-allowed
            transition-all duration-200;
+    box-shadow: var(--shadow-button);
   }
 
-  /* ── Input field ── */
+  /* ═══ Ghost button ═══ */
+  .btn-ghost {
+    @apply px-4 py-2 rounded-full font-medium text-sm
+           hover:bg-surface-100 active:scale-[0.97]
+           disabled:opacity-40 disabled:cursor-not-allowed
+           transition-all duration-200;
+    color: var(--color-text-secondary);
+  }
+  .dark .btn-ghost { @apply hover:bg-surface-100; }
+
+  /* ═══ Input field ═══ */
   .input-field {
-    @apply w-full px-4 py-3 border border-neutral-200 rounded-xl
-           bg-white text-neutral-900 placeholder:text-neutral-400
-           focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500
-           transition-all duration-200 text-sm;
+    @apply w-full px-4 py-3 rounded-xl text-sm
+           focus:outline-none focus:ring-2 focus:ring-primary-500/20
+           transition-all duration-200;
+    background-color: var(--color-surface-0);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+  .input-field::placeholder {
+    color: var(--color-text-placeholder);
+  }
+  .input-field:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgb(37 99 235 / 0.12);
   }
 
-  /* ── Card ── */
+  /* ═══ Card — bài viết, sidebar ═══ */
   .card {
-    @apply bg-white rounded-2xl border border-neutral-100 p-5
-           shadow-sm transition-shadow duration-200;
+    background-color: var(--color-surface-0);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .card-hover:hover {
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-card-hover);
   }
 
+  /* ═══ Avatar ═══ */
+  .avatar-ring {
+    ring: 2px solid var(--color-border-light);
+  }
+  .dark .avatar-ring {
+    ring: 2px solid var(--color-border);
+  }
+
+  /* ═══ Badge ═══ */
+  .badge-media {
+    @apply absolute bottom-2 left-2 text-white text-[10px] font-extrabold
+           px-2 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none;
+    background-color: rgb(15 23 42 / 0.8);
+  }
 }
 
-/* ── Skeleton shimmer animation ── */
+/* ── Utility layer ────────────────────────────────────────── */
+@layer utilities {
+  /* Post fade-in animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.35s ease-out both;
+  }
+  .animate-fade-in-up:nth-child(1) { animation-delay: 0ms; }
+  .animate-fade-in-up:nth-child(2) { animation-delay: 50ms; }
+  .animate-fade-in-up:nth-child(3) { animation-delay: 100ms; }
+  .animate-fade-in-up:nth-child(4) { animation-delay: 150ms; }
+  .animate-fade-in-up:nth-child(5) { animation-delay: 200ms; }
+
+  /* Like heart burst */
+  @keyframes heartBurst {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.3); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+  }
+  .animate-heart-burst {
+    animation: heartBurst 0.35s ease-out;
+  }
+
+  /* Subtle pulse for retweet toast */
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(-4px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .animate-toast-in {
+    animation: toastIn 0.25s ease-out;
+  }
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -72,8 +288,25 @@
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* ── Custom scrollbar ── */
-::-webkit-scrollbar { width: 6px; }
+.dark .skeleton {
+  background-color: #334155;
+  background-image: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
+}
+
+/* ── Custom scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* ── Emoji picker dark mode fix ───────────────────────────── */
+.dark .EmojiPickerReact {
+  --epr-bg-color: #1e293b;
+  --epr-category-label-bg-color: #1e293b;
+  --epr-text-color: #f1f5f9;
+  --epr-hover-bg-color: #334155;
+  --epr-search-input-bg-color: #0f172a;
+  --epr-search-input-text-color: #f1f5f9;
+}

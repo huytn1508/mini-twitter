@@ -53,13 +53,13 @@ export default function HomePage() {
       {/* Main content */}
       <div className="flex-1 min-w-0">
       {/* Tab Bar */}
-      <div className="flex border-b border-neutral-200 mb-5">
+      <div className="flex border-b border-border mb-5">
         <button
           onClick={() => setTab('all')}
           className={`flex-1 py-3 text-center font-semibold text-sm transition-all border-b-2 ${
             tab === 'all'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              ? 'border-primary-600 text-primary-600'
+              : 'border-transparent text-text-tertiary hover:text-text-secondary hover:bg-surface-50 dark:hover:bg-surface-100'
           }`}
         >
           Tất cả
@@ -69,9 +69,9 @@ export default function HomePage() {
           disabled={!isAuthenticated}
           className={`flex-1 py-3 text-center font-semibold text-sm transition-all border-b-2 ${
             tab === 'following'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-neutral-500 hover:text-neutral-700'
-          } disabled:opacity-50`}
+              ? 'border-primary-600 text-primary-600'
+              : 'border-transparent text-text-tertiary hover:text-text-secondary hover:bg-surface-50 dark:hover:bg-surface-100'
+          } disabled:opacity-40`}
         >
           Đang follow
         </button>

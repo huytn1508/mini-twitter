@@ -24,9 +24,12 @@ export default function PostList({ posts, loading, error, onRetry, onPostDelete,
   }
 
   return (
-    <div className="space-y-4">
-      {posts.map(post => (
-        <PostCard key={post.id} post={post} onDelete={onPostDelete} />
+    <div className="space-y-3">
+      {posts.map((post, idx) => (
+        <div key={post.id} style={{ animationDelay: `${Math.min(idx, 4) * 60}ms` }}
+          className="animate-fade-in-up">
+          <PostCard post={post} onDelete={onPostDelete} />
+        </div>
       ))}
     </div>
   );

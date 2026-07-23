@@ -12,7 +12,7 @@ export default function PostContent({ content, className = '' }) {
   const parts = content.split(regex);
 
   return (
-    <p className={className || 'mt-2 text-[15px] text-neutral-800 whitespace-pre-wrap break-words leading-relaxed'}>
+    <p className={className || 'mt-1.5 text-[15px] text-text-primary whitespace-pre-wrap break-words leading-relaxed'}>
       {parts.map((part, i) => {
         if (part.startsWith('#') && part.length > 1) {
           const tag = part.slice(1).toLowerCase();
@@ -20,7 +20,7 @@ export default function PostContent({ content, className = '' }) {
             <Link
               key={i}
               to={`/hashtag/${tag}`}
-              className="text-indigo-600 hover:text-indigo-700 hover:underline font-medium"
+              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:underline font-semibold"
             >
               {part}
             </Link>
@@ -32,7 +32,7 @@ export default function PostContent({ content, className = '' }) {
             <Link
               key={i}
               to={`/profile/${username}`}
-              className="text-indigo-600 hover:text-indigo-700 hover:underline font-medium"
+              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:underline font-semibold"
             >
               {part}
             </Link>

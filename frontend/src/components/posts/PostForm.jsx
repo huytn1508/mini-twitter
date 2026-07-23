@@ -211,14 +211,14 @@ export default function PostForm({ onPostCreated }) {
   if (!user) return null;
 
   return (
-    <div className="card mb-4">
+    <div className="card card-hover mb-4">
       <form onSubmit={handleSubmit}>
         <div className="flex gap-3">
           <Avatar src={user.avatar_url} alt={user.display_name} />
           <div className="flex-1 min-w-0">
             <textarea value={content} onChange={e => setContent(e.target.value)}
               placeholder="Bạn đang nghĩ gì?" rows={3}
-              className="w-full resize-none border-0 focus:ring-0 text-[15px] text-neutral-800 placeholder:text-neutral-400 bg-transparent outline-none leading-relaxed"
+              className="w-full resize-none border-0 focus:ring-0 text-[15px] text-text-primary placeholder:text-text-placeholder bg-transparent outline-none leading-relaxed"
               maxLength={MAX_CHARS + 50} />
 
             {/* Video preview */}
@@ -267,14 +267,14 @@ export default function PostForm({ onPostCreated }) {
 
             {/* Sensitive toggle indicator */}
             {isSensitive && (
-              <div className="flex items-center gap-2 mt-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-1.5">
+              <div className="flex items-center gap-2 mt-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-lg px-3 py-1.5">
                 <HiEyeOff className="w-4 h-4" /> Nội dung nhạy cảm
               </div>
             )}
 
             {/* Schedule indicator */}
             {scheduleDate && (
-              <div className="flex items-center gap-2 mt-2 text-xs text-indigo-600 bg-indigo-50 rounded-lg px-3 py-1.5">
+              <div className="flex items-center gap-2 mt-2 text-xs text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-lg px-3 py-1.5">
                 <HiClock className="w-4 h-4" /> Đăng vào {new Date(scheduleDate).toLocaleString('vi-VN')}
               </div>
             )}
@@ -282,32 +282,36 @@ export default function PostForm({ onPostCreated }) {
             {error && <p className="text-rose-500 text-sm mt-2">{error}</p>}
 
             {/* Actions */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 flex-wrap gap-2">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-light flex-wrap gap-2">
+              <div className="flex items-center gap-0.5">
                 <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" />
                 <button type="button" onClick={() => fileInputRef.current?.click()}
                   disabled={!!gifUrl || !!video}
-                  className={`p-2 rounded-full transition-all ${(gifUrl || video) ? 'text-neutral-300 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'}`} title="Thêm ảnh/video">
+                  className={`p-2 rounded-full transition-all duration-200 ${
+                    (gifUrl || video)
+                      ? 'text-text-tertiary/30 cursor-not-allowed'
+                      : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+                  }`} title="Thêm ảnh/video">
                   <HiPhotograph className="w-5 h-5" />
                 </button>
 
-                {/* GIF button — styled like X with "GIF" text */}
+                {/* GIF button */}
                 <button type="button" onClick={openGifPicker}
                   disabled={images.length > 0 || !!video}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wide transition-all ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wide transition-all duration-200 ${
                     (images.length > 0 || video)
-                      ? 'text-neutral-300 cursor-not-allowed bg-neutral-50'
+                      ? 'text-text-tertiary/30 cursor-not-allowed'
                       : gifUrl
-                        ? 'text-indigo-700 bg-indigo-100'
-                        : 'text-neutral-500 hover:text-indigo-600 hover:bg-indigo-50'
+                        ? 'text-primary-700 bg-primary-100 dark:bg-primary-900/30'
+                        : 'text-text-tertiary hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
                   }`} title="GIF">
                   GIF
                 </button>
 
                 {/* Emoji button */}
                 <div className="relative">
-                  <button type="button" onClick={() => setShowEmoji(!showEmoji)}
-                    className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded-full transition-all" title="Emoji">
+                  <button type="button" onClick={() => { setShowEmoji(!showEmoji); if (showGif) setShowGif(false); }}
+                    className="p-2 rounded-full transition-all duration-200 text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/20" title="Emoji">
                     <HiEmojiHappy className="w-5 h-5" />
                   </button>
                   {showEmoji && (
@@ -318,30 +322,51 @@ export default function PostForm({ onPostCreated }) {
                 </div>
 
                 {/* Schedule */}
-                <div className="relative">
-                  <button type="button" onClick={() => document.getElementById('schedule-input').showPicker()}
-                    className={`p-2 rounded-full transition-all ${scheduleDate ? 'text-indigo-600 bg-indigo-50' : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'}`} title="Lên lịch">
-                    <HiClock className="w-5 h-5" />
-                  </button>
-                  <input id="schedule-input" type="datetime-local" value={scheduleDate}
-                    onChange={e => setScheduleDate(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
-                    className="absolute opacity-0 w-0 h-0" />
-                </div>
+                <button type="button" onClick={() => document.getElementById('schedule-input').showPicker()}
+                  className={`p-2 rounded-full transition-all duration-200 ${
+                    scheduleDate
+                      ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                      : 'text-text-tertiary hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+                  }`} title="Lên lịch">
+                  <HiClock className="w-5 h-5" />
+                </button>
+                <input id="schedule-input" type="datetime-local" value={scheduleDate}
+                  onChange={e => setScheduleDate(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className="absolute opacity-0 w-0 h-0" />
 
                 {/* Content warning */}
                 <button type="button" onClick={() => setIsSensitive(!isSensitive)}
-                  className={`p-2 rounded-full transition-all ${isSensitive ? 'text-amber-600 bg-amber-50' : 'text-neutral-400 hover:text-amber-600 hover:bg-amber-50'}`} title="Nội dung nhạy cảm">
+                  className={`p-2 rounded-full transition-all duration-200 ${
+                    isSensitive
+                      ? 'text-amber-600 bg-amber-50 dark:bg-amber-500/10'
+                      : 'text-text-tertiary hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                  }`} title="Nội dung nhạy cảm">
                   <HiEyeOff className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="flex items-center gap-3">
-                <span className={`text-xs font-medium ${charsLeft < 0 ? 'text-rose-500' : charsLeft < 20 ? 'text-amber-500' : 'text-neutral-400'}`}>
-                  {content.length > 0 ? charsLeft : ''}
-                </span>
-                <button type="submit" disabled={posting || (!content.trim() && images.length === 0 && !gifUrl && !video) || charsLeft < 0}
-                  className="btn-primary !py-2 !px-5 !text-sm">
+                {content.length > 0 && (
+                  <>
+                    {/* Char count ring */}
+                    <svg className="w-7 h-7 -rotate-90" viewBox="0 0 28 28">
+                      <circle cx="14" cy="14" r="12" fill="none"
+                        stroke={charsLeft < 0 ? '#f43f5e' : charsLeft < 20 ? '#f59e0b' : '#e2e8f0'}
+                        strokeWidth="2.5" strokeLinecap="round"
+                        strokeDasharray={`${(content.length / MAX_CHARS) * 75.4} 75.4`}
+                        className="transition-all duration-300" />
+                    </svg>
+                    <span className={`text-xs font-semibold tabular-nums ${
+                      charsLeft < 0 ? 'text-rose-500' : charsLeft < 20 ? 'text-amber-500' : 'text-text-tertiary'
+                    }`}>
+                      {charsLeft < 0 ? charsLeft : charsLeft <= 20 ? charsLeft : ''}
+                    </span>
+                  </>
+                )}
+                <button type="submit"
+                  disabled={posting || (!content.trim() && images.length === 0 && !gifUrl && !video) || charsLeft < 0}
+                  className="btn-primary !py-2 !px-5 !text-sm !rounded-full">
                   {posting ? 'Đang đăng...' : scheduleDate ? 'Lên lịch' : 'Đăng'}
                 </button>
               </div>
@@ -352,10 +377,10 @@ export default function PostForm({ onPostCreated }) {
 
       {/* GIF Popover */}
       {showGif && (
-        <div className="mt-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+        <div className="mt-3 p-3 bg-surface-50 dark:bg-surface-100 rounded-xl border border-border animate-toast-in">
           {/* Search bar */}
           <div className="relative mb-3">
-            <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
             <input
               value={gifSearch}
               onChange={e => handleGifSearchChange(e.target.value)}
@@ -367,7 +392,7 @@ export default function PostForm({ onPostCreated }) {
           </div>
 
           {/* Label */}
-          <p className="text-xs text-neutral-500 mb-2 font-medium">
+          <p className="text-xs text-text-secondary mb-2 font-medium">
             {gifSearch.trim() ? `Kết quả: "${gifSearch}"` : '🔥 Xu hướng'}
           </p>
 
@@ -388,7 +413,7 @@ export default function PostForm({ onPostCreated }) {
                 <img key={gif.id} src={gif.preview} alt={gif.title}
                   onClick={() => selectGif(gif)}
                   loading="lazy"
-                  className="rounded-lg cursor-pointer hover:ring-2 ring-indigo-500 w-full object-cover bg-neutral-200"
+                  className="rounded-lg cursor-pointer hover:ring-2 ring-primary-500 w-full object-cover bg-surface-200 transition-all duration-150 hover:scale-[1.02]"
                   style={{ aspectRatio: gif.width && gif.height ? `${gif.width}/${gif.height}` : 'auto' }}
                 />
               ))}
@@ -397,7 +422,7 @@ export default function PostForm({ onPostCreated }) {
 
           {/* Empty */}
           {!gifLoading && !gifError && gifResults.length === 0 && (
-            <p className="text-xs text-neutral-400 py-4 text-center">
+            <p className="text-xs text-text-tertiary py-4 text-center">
               {gifSearch.trim() ? 'Không tìm thấy GIF nào' : 'Đang tải GIF...'}
             </p>
           )}

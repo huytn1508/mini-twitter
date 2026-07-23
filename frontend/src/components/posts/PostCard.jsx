@@ -15,10 +15,10 @@ function SensitiveWrapper({ isSensitive, children }) {
   const [revealed, setRevealed] = useState(false);
   if (!isSensitive) return children;
   return (
-    <div className="relative" onClick={() => setRevealed(!revealed)}>
+    <div className="relative mt-3" onClick={() => setRevealed(!revealed)}>
       <div className={revealed ? '' : 'blur-xl select-none pointer-events-none'}>{children}</div>
       {!revealed && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 rounded-xl cursor-pointer">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-xl cursor-pointer backdrop-blur-sm">
           <HiOutlineExclamationCircle className="w-8 h-8 text-white mb-2" />
           <span className="text-white text-sm font-semibold">Nội dung nhạy cảm</span>
           <span className="text-white/70 text-xs mt-1">Nhấn để xem</span>
@@ -39,7 +39,8 @@ export default function PostCard({ post, onUpdate, onDelete }) {
   const [retweeting, setRetweeting] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [quoteContent, setQuoteContent] = useState('');
-  const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
+  const [heartBurst, setHeartBurst] = useState(false);
+  const [toast, setToast] = useState(null);
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 2500);
@@ -52,6 +53,10 @@ export default function PostCard({ post, onUpdate, onDelete }) {
       const res = await likesAPI.toggle(post.id);
       setIsLiked(res.data.liked);
       setLikesCount(prev => res.data.liked ? prev + 1 : prev - 1);
+      if (res.data.liked) {
+        setHeartBurst(true);
+        setTimeout(() => setHeartBurst(false), 350);
+      }
     } catch (err) { console.error('Like failed:', err); }
     finally { setLiking(false); }
   };
@@ -93,17 +98,15 @@ export default function PostCard({ post, onUpdate, onDelete }) {
   const handleCommentAdded = () => setCommentsCount(prev => prev + 1);
   const handleCommentDeleted = () => setCommentsCount(prev => prev - 1);
   const isOwner = user?.id === post.user?.id;
-
-  // Check if this is a retweet
   const isRetweet = post.retweet_type === 'retweet';
   const isQuote = post.retweet_type === 'quote';
 
   return (
-    <div className="card hover:shadow-md relative">
+    <div className="card card-hover animate-fade-in-up relative">
       {/* Toast notification */}
       {toast && (
-        <div className={`absolute top-3 right-3 z-10 px-4 py-2 rounded-xl text-sm font-medium shadow-lg animate-pulse ${
-          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-rose-500 text-white'
+        <div className={`absolute top-3 right-3 z-10 px-4 py-2 rounded-xl text-sm font-semibold shadow-lg animate-toast-in ${
+          toast.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
         }`}>
           {toast.message}
         </div>
@@ -111,47 +114,51 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
       {/* Retweet indicator */}
       {isRetweet && (
-        <div className="flex items-center gap-2 text-xs text-neutral-500 font-medium mb-3">
-          <HiSwitchHorizontal className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-2 text-xs font-medium mb-3 text-retweet">
+          <HiSwitchHorizontal className="w-4 h-4" />
           <span>{post.user?.display_name} đã retweet</span>
         </div>
       )}
 
       {isQuote && (
-        <div className="flex items-center gap-2 text-xs text-neutral-500 font-medium mb-3">
-          <HiSwitchHorizontal className="w-4 h-4 text-indigo-500" />
+        <div className="flex items-center gap-2 text-xs font-medium mb-3 text-comment">
+          <HiSwitchHorizontal className="w-4 h-4" />
           <span>{post.user?.display_name} đã quote</span>
         </div>
       )}
 
       {/* Main post content */}
       <div className="flex items-start gap-3">
-        <Link to={`/profile/${post.user?.username}`}>
+        <Link to={`/profile/${post.user?.username}`} className="flex-shrink-0">
           <Avatar src={post.user?.avatar_url} alt={post.user?.display_name} />
         </Link>
+
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Header: name + username + time */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Link to={`/profile/${post.user?.username}`}
-              className="font-semibold text-sm text-neutral-900 hover:underline truncate">
+              className="font-semibold text-[15px] text-text-primary hover:underline truncate max-w-[160px]">
               {post.user?.display_name}
             </Link>
-            <span className="text-neutral-500 text-sm font-normal">@{post.user?.username}</span>
-            <span className="text-neutral-300 text-sm">·</span>
-            <span className="text-neutral-400 text-xs">{formatDate(post.created_at)}</span>
+            <span className="text-text-tertiary text-sm font-normal truncate max-w-[120px]">@{post.user?.username}</span>
+            <span className="text-text-tertiary text-sm">·</span>
+            <Link to={`/post/${post.id}`} className="text-text-tertiary text-xs hover:underline whitespace-nowrap">
+              {formatDate(post.created_at)}
+            </Link>
           </div>
 
-          {/* Content (for quote: show caption + embedded original) */}
+          {/* Post body */}
           {post.content && <PostContent content={post.content} />}
 
           {/* Images (multi-image grid) */}
           {(post.images?.length > 0 || post.image_url) && (
             <SensitiveWrapper isSensitive={post.is_sensitive}>
-              <div className={`grid gap-1.5 mt-3 ${
+              <div className={`grid gap-1 mt-3 ${
                 (post.images?.length || 1) === 1 ? 'grid-cols-1' : 'grid-cols-2'
               }`}>
                 {(post.images?.length > 0 ? post.images : [post.image_url]).map((url, i) => (
                   <img key={i} src={url} alt=""
-                    className={`rounded-xl w-full object-cover border border-neutral-100 ${
+                    className={`rounded-xl w-full object-cover border border-border-light ${
                       (post.images?.length || 1) === 1 ? 'max-h-96' : 'max-h-64'
                     }`} loading="lazy" />
                 ))}
@@ -162,124 +169,136 @@ export default function PostCard({ post, onUpdate, onDelete }) {
           {/* Video */}
           {post.video_url && !post.images?.length && !post.image_url && (
             <SensitiveWrapper isSensitive={post.is_sensitive}>
-              <div className="relative mt-3 max-w-md">
+              <div className="relative max-w-md">
                 <video src={post.video_url} controls muted autoPlay loop playsInline
-                  className="rounded-xl w-full max-h-96 object-contain bg-black border border-neutral-200" />
-                <span className="absolute bottom-2 left-2 bg-neutral-900/75 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
-                  VIDEO
-                </span>
+                  className="rounded-xl w-full max-h-96 object-contain bg-black border border-border" />
+                <span className="badge-media">VIDEO</span>
               </div>
             </SensitiveWrapper>
           )}
 
-          {/* GIF — có badge để phân biệt với ảnh tĩnh */}
+          {/* GIF */}
           {post.gif_url && !post.images?.length && !post.image_url && (
             <SensitiveWrapper isSensitive={post.is_sensitive}>
-              <div className="relative mt-3 inline-block">
+              <div className="relative inline-block">
                 <img src={post.gif_url} alt="GIF"
-                  className="rounded-xl w-full max-h-80 object-contain border border-neutral-100 bg-neutral-100"
+                  className="rounded-xl w-full max-h-80 object-contain border border-border-light bg-surface-100"
                   loading="lazy" />
-                <span className="absolute bottom-2 left-2 bg-neutral-900/75 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
-                  GIF
-                </span>
+                <span className="badge-media">GIF</span>
               </div>
             </SensitiveWrapper>
           )}
 
           {/* Embedded original post (for retweet/quote) */}
-          {(isRetweet || isQuote) && (
-            <div className="mt-3 border border-neutral-200 rounded-xl p-3 bg-neutral-50/50">
+          {(isRetweet || isQuote) && post.retweet?.original_post && (
+            <div className="mt-3 border border-border rounded-xl p-3 bg-surface-50">
               <div className="flex items-center gap-2 mb-1.5">
-                <Avatar src={post.retweet?.original_post?.user?.avatar_url} size="sm" />
-                <Link to={`/profile/${post.retweet?.original_post?.user?.username}`}
-                  className="font-semibold text-sm text-neutral-900 hover:underline">
-                  {post.retweet?.original_post?.user?.display_name}
+                <Avatar src={post.retweet.original_post.user?.avatar_url} size="sm" />
+                <Link to={`/profile/${post.retweet.original_post.user?.username}`}
+                  className="font-semibold text-sm text-text-primary hover:underline">
+                  {post.retweet.original_post.user?.display_name}
                 </Link>
-                <span className="text-neutral-500 text-xs">@{post.retweet?.original_post?.user?.username}</span>
-                <span className="text-neutral-400 text-xs">{formatDate(post.retweet?.original_post?.created_at)}</span>
+                <span className="text-text-tertiary text-xs">@{post.retweet.original_post.user?.username}</span>
+                <span className="text-text-tertiary text-xs">{formatDate(post.retweet.original_post.created_at)}</span>
               </div>
-              {post.retweet?.original_post?.content && (
+              {post.retweet.original_post.content && (
                 <PostContent content={post.retweet.original_post.content} />
               )}
-              {post.retweet?.original_post?.image_url && (
+              {post.retweet.original_post.image_url && (
                 <img src={post.retweet.original_post.image_url} alt=""
-                  className="mt-2 rounded-lg max-h-48 object-cover border border-neutral-100" loading="lazy" />
+                  className="mt-2 rounded-lg max-h-48 object-cover border border-border-light" loading="lazy" />
               )}
-              {post.retweet?.original_post?.video_url && (
+              {post.retweet.original_post.video_url && (
                 <div className="relative mt-2 max-w-sm">
                   <video src={post.retweet.original_post.video_url} controls muted autoPlay loop playsInline
-                    className="rounded-lg max-h-60 w-full object-contain bg-black border border-neutral-200" />
-                  <span className="absolute bottom-1.5 left-1.5 bg-neutral-900/75 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
-                    VIDEO
-                  </span>
+                    className="rounded-lg max-h-60 w-full object-contain bg-black border border-border" />
+                  <span className="badge-media">VIDEO</span>
                 </div>
               )}
-              {post.retweet?.original_post?.gif_url && (
+              {post.retweet.original_post.gif_url && (
                 <div className="relative mt-2 inline-block">
                   <img src={post.retweet.original_post.gif_url} alt="GIF"
-                    className="rounded-lg max-h-60 w-full object-contain border border-neutral-100 bg-neutral-100" loading="lazy" />
-                  <span className="absolute bottom-1.5 left-1.5 bg-neutral-900/75 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
-                    GIF
-                  </span>
+                    className="rounded-lg max-h-60 w-full object-contain border border-border-light bg-surface-100" loading="lazy" />
+                  <span className="badge-media">GIF</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-5 mt-3 pt-3 border-t border-neutral-100">
-            <button onClick={handleLike} disabled={!user || liking}
-              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                isLiked ? 'text-rose-500' : 'text-neutral-400 hover:text-rose-500'
-              } disabled:opacity-50`}>
-              {isLiked ? <HiHeart className="w-[18px] h-[18px]" /> : <HiOutlineHeart className="w-[18px] h-[18px]" />}
-              {likesCount > 0 && <span>{likesCount}</span>}
-            </button>
-
-            <button onClick={() => setShowComments(!showComments)}
-              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                showComments ? 'text-indigo-600' : 'text-neutral-400 hover:text-indigo-600'
-              }`}>
-              <HiOutlineChat className="w-[18px] h-[18px]" />
-              {commentsCount > 0 && <span>{commentsCount}</span>}
-            </button>
+          {/* Action bar */}
+          <div className="flex items-center justify-between max-w-md mt-3 pt-2.5 border-t border-border-light">
+            {/* Comment button */}
+            <ActionBtn
+              onClick={() => setShowComments(!showComments)}
+              active={showComments}
+              activeColor="text-comment"
+              hoverColor="hover:text-comment"
+              hoverBg="hover:bg-comment-bg"
+              icon={HiOutlineChat}
+              count={commentsCount}
+              label="Bình luận"
+            />
 
             {/* Retweet button */}
             {user && !isOwner && (
               <div className="relative group">
-                <button onClick={handleRetweet} disabled={retweeting}
-                  className="flex items-center gap-1.5 text-sm font-medium text-neutral-400 hover:text-green-500 transition-colors disabled:opacity-50">
-                  <HiSwitchHorizontal className="w-[18px] h-[18px]" />
-                </button>
-                {/* Dropdown for Quote Tweet */}
-                <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block">
+                <ActionBtn
+                  onClick={handleRetweet}
+                  disabled={retweeting}
+                  activeColor="text-retweet"
+                  hoverColor="hover:text-retweet"
+                  hoverBg="hover:bg-retweet-bg"
+                  icon={HiSwitchHorizontal}
+                  label="Retweet"
+                />
+                {/* Quote dropdown */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
                   <button onClick={() => setShowQuoteModal(true)}
-                    className="text-xs bg-white border border-neutral-200 rounded-lg px-3 py-1.5 shadow-sm hover:bg-neutral-50 whitespace-nowrap">
+                    className="text-xs bg-surface-0 border border-border rounded-lg px-3 py-1.5 shadow-dropdown hover:bg-surface-50 whitespace-nowrap text-text-primary font-medium transition-colors">
                     Quote Tweet
                   </button>
                 </div>
               </div>
             )}
 
+            {/* Like button */}
+            <button
+              onClick={handleLike}
+              disabled={!user || liking}
+              className={`group flex items-center gap-1.5 text-sm font-medium transition-all duration-200
+                disabled:opacity-40 disabled:cursor-not-allowed
+                ${isLiked ? 'text-like' : 'text-text-tertiary hover:text-like'}`}
+              title="Thích"
+            >
+              <span className={`p-1.5 rounded-full transition-all duration-200 group-hover:bg-like-bg ${isLiked ? 'bg-like-bg' : ''}`}>
+                <HiHeart className={`w-[18px] h-[18px] transition-all duration-200 ${heartBurst ? 'animate-heart-burst' : ''} ${isLiked ? 'fill-current' : ''}`} />
+              </span>
+              {likesCount > 0 && <span className={isLiked ? 'text-like' : ''}>{likesCount}</span>}
+            </button>
+
+            {/* Delete button (owner only) */}
             {isOwner && (
               <button onClick={handleDelete} disabled={deleting}
-                className="flex items-center gap-1 text-sm text-neutral-300 hover:text-rose-500 transition-colors ml-auto" title="Xóa">
-                <HiOutlineTrash className="w-4 h-4" />
+                className="flex items-center gap-1 text-sm text-text-tertiary hover:text-rose-500 transition-colors ml-auto group"
+                title="Xóa">
+                <span className="p-1.5 rounded-full transition-all duration-200 group-hover:bg-rose-50 dark:group-hover:bg-rose-500/10">
+                  <HiOutlineTrash className="w-[18px] h-[18px]" />
+                </span>
               </button>
             )}
           </div>
 
           {/* Quote modal */}
           {showQuoteModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowQuoteModal(false)}>
-              <div className="bg-white rounded-2xl p-5 w-full max-w-md mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
-                <h3 className="font-bold text-neutral-900 mb-3">Quote Tweet</h3>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowQuoteModal(false)}>
+              <div className="bg-surface-0 rounded-2xl p-6 w-full max-w-md mx-4 shadow-dropdown animate-toast-in" onClick={e => e.stopPropagation()}>
+                <h3 className="font-bold text-text-primary mb-3">Quote Tweet</h3>
                 <textarea value={quoteContent} onChange={e => setQuoteContent(e.target.value)}
                   placeholder="Thêm bình luận của bạn..."
                   rows={3} maxLength={280}
-                  className="w-full border border-neutral-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none" />
+                  className="w-full border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none resize-none bg-surface-0 text-text-primary placeholder:text-text-placeholder" />
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-xs text-neutral-400">{quoteContent.length}/280</span>
+                  <span className="text-xs text-text-tertiary">{quoteContent.length}/280</span>
                   <div className="flex gap-2">
                     <button onClick={() => setShowQuoteModal(false)} className="btn-ghost text-xs">Hủy</button>
                     <button onClick={handleQuoteRetweet} disabled={!quoteContent.trim() || retweeting}
@@ -290,9 +309,9 @@ export default function PostCard({ post, onUpdate, onDelete }) {
             </div>
           )}
 
-          {/* Comments */}
+          {/* Comments section */}
           {showComments && (
-            <div className="mt-3 pt-3 border-t border-neutral-100">
+            <div className="mt-3 pt-3 border-t border-border-light">
               {user && <CommentForm postId={post.id} onCommentAdded={handleCommentAdded} />}
               <CommentList postId={post.id} onCommentDeleted={handleCommentDeleted} />
             </div>
@@ -300,5 +319,24 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Action button với hover color + background riêng */
+function ActionBtn({ onClick, disabled, active, activeColor, hoverColor, hoverBg, icon: Icon, count, label }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`group flex items-center gap-1 text-sm font-medium transition-all duration-200
+        disabled:opacity-40 disabled:cursor-not-allowed
+        ${active ? activeColor : `text-text-tertiary ${hoverColor}`}`}
+      title={label}
+    >
+      <span className={`p-1.5 rounded-full transition-all duration-200 ${hoverBg} ${active ? 'bg-current/10' : ''}`}>
+        <Icon className="w-[18px] h-[18px]" />
+      </span>
+      {count > 0 && <span>{count}</span>}
+    </button>
   );
 }

@@ -110,7 +110,7 @@ async function getAll(req, res, next) {
       },
       likes_count: post.likes?.length || 0,
       comments_count: post.comments?.length || 0,
-      is_liked: post.likes?.some(like => like.user_id === req.user.id),
+      is_liked: req.user ? post.likes?.some(like => like.user_id === req.user.id) : false,
     }));
 
     formattedPosts = await enrichRetweets(formattedPosts);
@@ -189,7 +189,7 @@ async function getFollowing(req, res, next) {
       },
       likes_count: post.likes?.length || 0,
       comments_count: post.comments?.length || 0,
-      is_liked: post.likes?.some(like => like.user_id === req.user.id),
+      is_liked: req.user ? post.likes?.some(like => like.user_id === req.user.id) : false,
     }));
 
     formattedPosts = await enrichRetweets(formattedPosts);

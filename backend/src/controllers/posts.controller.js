@@ -1,6 +1,7 @@
 const { supabaseAdmin } = require('../config/supabase');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
+const { syncPostHashtags } = require('./hashtags.controller');
 
 /**
  * Upload ảnh lên Supabase Storage.
@@ -194,6 +195,9 @@ async function create(req, res, next) {
 
     if (error) throw error;
 
+    // Extract & save hashtags
+    const hashtags = await syncPostHashtags(post.id, content);
+
     res.status(201).json({
       message: 'Đăng bài thành công',
       post: {
@@ -210,6 +214,7 @@ async function create(req, res, next) {
         likes_count: 0,
         comments_count: 0,
         is_liked: false,
+        hashtags,
       },
     });
   } catch (err) {

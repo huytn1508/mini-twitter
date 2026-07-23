@@ -10,6 +10,7 @@ const commentsRoutes = require('./routes/comments.routes');
 const likesRoutes = require('./routes/likes.routes');
 const followsRoutes = require('./routes/follows.routes');
 const usersRoutes = require('./routes/users.routes');
+const hashtagsRoutes = require('./routes/hashtags.routes');
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/posts', commentsRoutes);  // nested: /api/posts/:postId/comments
 app.use('/api/posts', likesRoutes);     // nested: /api/posts/:postId/like
 app.use('/api/users', followsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/hashtags', hashtagsRoutes);
 
 // ─── Error Handler ────────────────────────────────────────
 app.use(errorHandler);

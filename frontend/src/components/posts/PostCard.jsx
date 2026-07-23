@@ -8,6 +8,7 @@ import { formatDate } from '../../utils/formatDate';
 import Avatar from '../ui/Avatar';
 import CommentList from '../comments/CommentList';
 import CommentForm from '../comments/CommentForm';
+import PostContent from './PostContent';
 
 export default function PostCard({ post, onUpdate, onDelete }) {
   const { user } = useAuth();
@@ -76,9 +77,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
           </div>
 
           {/* Content */}
-          <p className="mt-2 text-[15px] text-neutral-800 whitespace-pre-wrap break-words leading-relaxed">
-            {post.content}
-          </p>
+          <PostContent content={post.content} />
 
           {/* Image */}
           {post.image_url && (

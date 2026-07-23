@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
+import HashtagPage from './pages/HashtagPage';
 import Spinner from './components/ui/Spinner';
 
 // Guest route: chỉ cho user chưa login truy cập
@@ -42,6 +43,7 @@ function AppRoutes() {
       {/* Public routes */}
       <Route path="/" element={<Layout><HomePage /></Layout>} />
       <Route path="/profile/:username" element={<Layout><ProfilePage /></Layout>} />
+      <Route path="/hashtag/:tag" element={<Layout><HashtagPage /></Layout>} />
 
       {/* Guest routes */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />

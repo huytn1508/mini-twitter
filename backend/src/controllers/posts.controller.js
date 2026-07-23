@@ -69,6 +69,7 @@ async function getAll(req, res, next) {
       content: post.content,
       image_url: post.image_url,
       images: post.images || [],
+      gif_url: post.gif_url || null,
       is_sensitive: post.is_sensitive || false,
       retweet_type: post.retweet_type || null,
       retweet_post_id: post.retweet_post_id || null,
@@ -147,6 +148,7 @@ async function getFollowing(req, res, next) {
       content: post.content,
       image_url: post.image_url,
       images: post.images || [],
+      gif_url: post.gif_url || null,
       is_sensitive: post.is_sensitive || false,
       retweet_type: post.retweet_type || null,
       retweet_post_id: post.retweet_post_id || null,
@@ -195,16 +197,22 @@ async function create(req, res, next) {
       imageUrl = images[0]; // Backward compat
     }
 
-    const { content, is_sensitive, scheduled_at } = req.body;
+    const { content, is_sensitive, scheduled_at, gif_url } = req.body;
     const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
+
+    // GIF hoặc ảnh, không phải cả hai
+    const finalGifUrl = gif_url?.trim() || null;
+    const finalImages = finalGifUrl ? [] : (images.length > 0 ? images : null);
+    const finalImageUrl = finalGifUrl ? null : (imageUrl || null);
 
     const { data: post, error } = await supabaseAdmin
       .from('posts')
       .insert({
         user_id: req.user.id,
         content,
-        image_url: imageUrl,
-        images: images.length > 0 ? images : null,
+        image_url: finalImageUrl,
+        images: finalImages,
+        gif_url: finalGifUrl,
         is_sensitive: is_sensitive === 'true' || is_sensitive === true,
         scheduled_at: scheduled_at || null,
         is_published: !isScheduled,
@@ -227,6 +235,7 @@ async function create(req, res, next) {
         content: post.content,
         image_url: post.image_url,
         images: post.images || [],
+        gif_url: post.gif_url || null,
         is_sensitive: post.is_sensitive || false,
         created_at: post.created_at,
         user: {
@@ -366,6 +375,7 @@ async function update(req, res, next) {
         content: post.content,
         image_url: post.image_url,
         images: post.images || [],
+        gif_url: post.gif_url || null,
         is_sensitive: post.is_sensitive || false,
         created_at: post.created_at,
         user: {
@@ -515,6 +525,7 @@ async function formatPostWithRetweet(post, authUser) {
     content: post.content,
     image_url: post.image_url,
     images: post.images || [],
+    gif_url: post.gif_url || null,
     is_sensitive: post.is_sensitive || false,
     created_at: post.created_at,
     retweet_type: post.retweet_type || null,

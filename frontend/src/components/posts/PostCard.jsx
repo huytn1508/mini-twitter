@@ -159,6 +159,20 @@ export default function PostCard({ post, onUpdate, onDelete }) {
             </SensitiveWrapper>
           )}
 
+          {/* GIF — có badge để phân biệt với ảnh tĩnh */}
+          {post.gif_url && !post.images?.length && !post.image_url && (
+            <SensitiveWrapper isSensitive={post.is_sensitive}>
+              <div className="relative mt-3 inline-block">
+                <img src={post.gif_url} alt="GIF"
+                  className="rounded-xl w-full max-h-80 object-contain border border-neutral-100 bg-neutral-100"
+                  loading="lazy" />
+                <span className="absolute bottom-2 left-2 bg-neutral-900/75 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
+                  GIF
+                </span>
+              </div>
+            </SensitiveWrapper>
+          )}
+
           {/* Embedded original post (for retweet/quote) */}
           {(isRetweet || isQuote) && (
             <div className="mt-3 border border-neutral-200 rounded-xl p-3 bg-neutral-50/50">
@@ -177,6 +191,15 @@ export default function PostCard({ post, onUpdate, onDelete }) {
               {post.retweet?.original_post?.image_url && (
                 <img src={post.retweet.original_post.image_url} alt=""
                   className="mt-2 rounded-lg max-h-48 object-cover border border-neutral-100" loading="lazy" />
+              )}
+              {post.retweet?.original_post?.gif_url && (
+                <div className="relative mt-2 inline-block">
+                  <img src={post.retweet.original_post.gif_url} alt="GIF"
+                    className="rounded-lg max-h-60 w-full object-contain border border-neutral-100 bg-neutral-100" loading="lazy" />
+                  <span className="absolute bottom-1.5 left-1.5 bg-neutral-900/75 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
+                    GIF
+                  </span>
+                </div>
               )}
             </div>
           )}

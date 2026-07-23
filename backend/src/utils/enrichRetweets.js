@@ -22,6 +22,7 @@ async function enrichRetweets(posts) {
       content: o.content,
       image_url: o.image_url,
       images: o.images || [],
+      gif_url: o.gif_url || null,
       created_at: o.created_at,
       user: {
         id: o.user_id,

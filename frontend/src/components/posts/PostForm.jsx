@@ -1,14 +1,14 @@
-import { useState, useRef, useCallback } from 'react';
-import { HiPhotograph, HiX, HiEmojiHappy, HiOutlinePhotograph, HiClock, HiEyeOff } from 'react-icons/hi';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { HiPhotograph, HiX, HiEmojiHappy, HiOutlineFilm, HiClock, HiEyeOff, HiSearch } from 'react-icons/hi';
 import EmojiPicker from 'emoji-picker-react';
 import { postsAPI } from '../../api/posts';
 import { useAuth } from '../../context/AuthContext';
 import { validatePostContent } from '../../utils/validators';
+import { searchGifs, getTrending, debounce } from '../../services/giphy';
 import Avatar from '../ui/Avatar';
+import Spinner from '../ui/Spinner';
 
 const MAX_CHARS = 280;
-const GIPHY_API = 'https://api.giphy.com/v1/gifs';
-const GIPHY_KEY = 'dc6zaTOxFJmzC'; // GIPHY demo key — dùng cho portfolio, nếu lỗi thì đăng ký key mới tại developers.giphy.com
 
 export default function PostForm({ onPostCreated }) {
   const { user } = useAuth();
@@ -21,12 +21,17 @@ export default function PostForm({ onPostCreated }) {
   const [showGif, setShowGif] = useState(false);
   const [gifSearch, setGifSearch] = useState('');
   const [gifResults, setGifResults] = useState([]);
+  const [gifLoading, setGifLoading] = useState(false);
+  const [gifError, setGifError] = useState('');
+  const [gifUrl, setGifUrl] = useState(null);        // URL gốc lưu vào DB
+  const [gifPreview, setGifPreview] = useState(null); // URL preview trong compose
   const [isSensitive, setIsSensitive] = useState(false);
   const [scheduleDate, setScheduleDate] = useState('');
   const fileInputRef = useRef(null);
 
   const charsLeft = MAX_CHARS - content.length;
 
+  // ── Images ──────────────────────────────────────────────────
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 4) { setError('Tối đa 4 ảnh'); return; }
@@ -36,6 +41,8 @@ export default function PostForm({ onPostCreated }) {
       setImages(prev => [...prev, f]);
       setImagePreviews(prev => [...prev, URL.createObjectURL(f)]);
     });
+    // Chọn ảnh → xoá GIF nếu có
+    if (files.length > 0) { setGifUrl(null); setGifPreview(null); }
     setError('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -46,44 +53,90 @@ export default function PostForm({ onPostCreated }) {
     setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
   };
 
+  // ── Emoji ───────────────────────────────────────────────────
   const handleEmojiClick = useCallback((emoji) => {
     setContent(prev => prev + emoji.emoji);
     setShowEmoji(false);
   }, []);
 
-  // Load trending GIFs khi mở picker (không cần search)
-  const fetchTrending = async () => {
-    try {
-      const res = await fetch(`${GIPHY_API}/trending?api_key=${GIPHY_KEY}&limit=12&rating=g`);
-      const data = await res.json();
-      setGifResults(data.data || []);
-    } catch { /* trending fail silently */ }
+  // ── GIF: Load trending khi mở picker ────────────────────────
+  const openGifPicker = async () => {
+    const opening = !showGif;
+    setShowGif(opening);
+    if (opening) {
+      setGifSearch('');
+      setGifError('');
+      setGifLoading(true);
+      try {
+        const res = await getTrending({ limit: 15 });
+        setGifResults(res.gifs);
+      } catch (err) {
+        setGifError(err.message);
+        setGifResults([]);
+      } finally { setGifLoading(false); }
+    }
   };
 
-  const searchGif = async () => {
-    if (!gifSearch.trim()) return;
+  // ── GIF Search với debounce 350ms ───────────────────────────
+  const doSearch = useCallback(async (query) => {
+    if (!query.trim()) {
+      // Về trending nếu xoá hết search
+      setGifError('');
+      setGifLoading(true);
+      try {
+        const res = await getTrending({ limit: 15 });
+        setGifResults(res.gifs);
+      } catch (err) { setGifError(err.message); }
+      finally { setGifLoading(false); }
+      return;
+    }
+    setGifLoading(true);
+    setGifError('');
     try {
-      const res = await fetch(`${GIPHY_API}/search?api_key=${GIPHY_KEY}&q=${gifSearch}&limit=12&rating=g`);
-      const data = await res.json();
-      setGifResults(data.data || []);
-    } catch { setError('Tìm GIF thất bại'); }
+      const res = await searchGifs(query, { limit: 15 });
+      setGifResults(res.gifs);
+      if (res.gifs.length === 0) setGifError('Không tìm thấy GIF nào');
+    } catch (err) {
+      setGifError(err.message);
+      setGifResults([]);
+    } finally { setGifLoading(false); }
+  }, []);
+
+  const debouncedSearch = useRef(debounce(doSearch, 350)).current;
+
+  // Cleanup debounce khi unmount
+  useEffect(() => () => debouncedSearch.cancel?.(), [debouncedSearch]);
+
+  const handleGifSearchChange = (val) => {
+    setGifSearch(val);
+    debouncedSearch(val);
   };
 
+  // ── Select GIF ──────────────────────────────────────────────
   const selectGif = (gif) => {
-    const gifUrl = gif.images?.original?.url;
-    setImagePreviews(prev => [...prev, gifUrl]);
-    setImages(prev => [...prev, { isGif: true, url: gifUrl }]);
+    setGifUrl(gif.url);
+    setGifPreview(gif.preview);
     setShowGif(false);
     setGifSearch('');
     setGifResults([]);
+    // Xoá ảnh đã chọn (ràng buộc: GIF HOẶC ảnh)
+    imagePreviews.forEach(p => URL.revokeObjectURL(p));
+    setImages([]);
+    setImagePreviews([]);
   };
 
+  const removeGif = () => {
+    setGifUrl(null);
+    setGifPreview(null);
+  };
+
+  // ── Submit ──────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     const validationError = validatePostContent(content);
-    if (validationError && images.length === 0) { setError(validationError); return; }
-    if (!content.trim() && images.length === 0) { setError('Vui lòng nhập nội dung hoặc thêm ảnh'); return; }
+    if (validationError && images.length === 0 && !gifUrl) { setError(validationError); return; }
+    if (!content.trim() && images.length === 0 && !gifUrl) { setError('Vui lòng nhập nội dung hoặc thêm ảnh/GIF'); return; }
     setPosting(true);
     try {
       const formData = new FormData();
@@ -91,19 +144,21 @@ export default function PostForm({ onPostCreated }) {
       if (isSensitive) formData.append('is_sensitive', 'true');
       if (scheduleDate) formData.append('scheduled_at', new Date(scheduleDate).toISOString());
 
-      // Upload images (non-GIF)
-      const realImages = images.filter(img => !img.isGif);
-      realImages.forEach(img => formData.append('images', img));
+      // Upload ảnh (nếu không có GIF)
+      if (!gifUrl) {
+        images.forEach(img => formData.append('images', img));
+      }
 
-      // GIF URLs (gửi riêng)
-      const gifImages = images.filter(img => img.isGif);
-      if (gifImages.length > 0) formData.append('images', gifImages[0]);
+      // GIF URL
+      if (gifUrl) formData.append('gif_url', gifUrl);
 
       const res = await postsAPI.create(formData);
       setContent('');
       setImages([]);
       imagePreviews.forEach(p => URL.revokeObjectURL(p));
       setImagePreviews([]);
+      setGifUrl(null);
+      setGifPreview(null);
       setIsSensitive(false);
       setScheduleDate('');
       onPostCreated?.(res.data.post);
@@ -140,6 +195,20 @@ export default function PostForm({ onPostCreated }) {
               </div>
             )}
 
+            {/* GIF preview */}
+            {gifPreview && (
+              <div className="relative inline-block mt-2">
+                <img src={gifPreview} alt="GIF preview" className="rounded-xl max-h-48 w-full object-cover" />
+                <span className="absolute bottom-2 left-2 bg-neutral-900/75 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
+                  GIF
+                </span>
+                <button type="button" onClick={removeGif}
+                  className="absolute top-1.5 right-1.5 bg-neutral-900/70 text-white rounded-full p-1 hover:bg-neutral-900">
+                  <HiX className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Sensitive toggle indicator */}
             {isSensitive && (
               <div className="flex items-center gap-2 mt-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-1.5">
@@ -161,18 +230,22 @@ export default function PostForm({ onPostCreated }) {
               <div className="flex items-center gap-1">
                 <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden" />
                 <button type="button" onClick={() => fileInputRef.current?.click()}
-                  className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded-full transition-all" title="Thêm ảnh">
+                  disabled={!!gifUrl}
+                  className={`p-2 rounded-full transition-all ${gifUrl ? 'text-neutral-300 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'}`} title="Thêm ảnh">
                   <HiPhotograph className="w-5 h-5" />
                 </button>
 
-                {/* GIF button */}
-                <button type="button" onClick={() => {
-                  const newShow = !showGif;
-                  setShowGif(newShow);
-                  if (newShow) fetchTrending();
-                }}
-                  className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded-full transition-all" title="GIF">
-                  <HiOutlinePhotograph className="w-5 h-5" />
+                {/* GIF button — styled like X with "GIF" text */}
+                <button type="button" onClick={openGifPicker}
+                  disabled={images.length > 0}
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wide transition-all ${
+                    images.length > 0
+                      ? 'text-neutral-300 cursor-not-allowed bg-neutral-50'
+                      : gifUrl
+                        ? 'text-indigo-700 bg-indigo-100'
+                        : 'text-neutral-500 hover:text-indigo-600 hover:bg-indigo-50'
+                  }`} title="GIF">
+                  GIF
                 </button>
 
                 {/* Emoji button */}
@@ -211,7 +284,7 @@ export default function PostForm({ onPostCreated }) {
                 <span className={`text-xs font-medium ${charsLeft < 0 ? 'text-rose-500' : charsLeft < 20 ? 'text-amber-500' : 'text-neutral-400'}`}>
                   {content.length > 0 ? charsLeft : ''}
                 </span>
-                <button type="submit" disabled={posting || (!content.trim() && images.length === 0) || charsLeft < 0}
+                <button type="submit" disabled={posting || (!content.trim() && images.length === 0 && !gifUrl) || charsLeft < 0}
                   className="btn-primary !py-2 !px-5 !text-sm">
                   {posting ? 'Đang đăng...' : scheduleDate ? 'Lên lịch' : 'Đăng'}
                 </button>
@@ -224,25 +297,53 @@ export default function PostForm({ onPostCreated }) {
       {/* GIF Popover */}
       {showGif && (
         <div className="mt-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200">
-          <div className="flex gap-2 mb-3">
-            <input value={gifSearch} onChange={e => setGifSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), searchGif())}
-              placeholder="Tìm GIF..." className="input-field !py-2 !text-sm" autoFocus />
-            <button type="button" onClick={searchGif} className="btn-primary !py-2 !text-xs">Tìm</button>
+          {/* Search bar */}
+          <div className="relative mb-3">
+            <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <input
+              value={gifSearch}
+              onChange={e => handleGifSearchChange(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+              placeholder="Tìm GIF..."
+              className="input-field !py-2 !pl-9 !pr-3 !text-sm"
+              autoFocus
+            />
           </div>
+
+          {/* Label */}
           <p className="text-xs text-neutral-500 mb-2 font-medium">
             {gifSearch.trim() ? `Kết quả: "${gifSearch}"` : '🔥 Xu hướng'}
           </p>
-          {gifResults.length === 0 ? (
-            <p className="text-xs text-neutral-400 py-4 text-center">Đang tải GIF...</p>
-          ) : (
+
+          {/* Loading */}
+          {gifLoading && (
+            <div className="flex justify-center py-8"><Spinner /></div>
+          )}
+
+          {/* Error */}
+          {!gifLoading && gifError && (
+            <p className="text-xs text-rose-500 py-4 text-center">{gifError}</p>
+          )}
+
+          {/* Grid */}
+          {!gifLoading && gifResults.length > 0 && (
             <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
               {gifResults.map(gif => (
-                <img key={gif.id} src={gif.images?.fixed_height_small?.url} alt={gif.title}
+                <img key={gif.id} src={gif.preview} alt={gif.title}
                   onClick={() => selectGif(gif)}
-                  className="rounded-lg cursor-pointer hover:ring-2 ring-indigo-500 w-full object-cover" />
+                  loading="lazy"
+                  className="rounded-lg cursor-pointer hover:ring-2 ring-indigo-500 w-full object-cover bg-neutral-200"
+                  style={{ aspectRatio: gif.width && gif.height ? `${gif.width}/${gif.height}` : 'auto' }}
+                />
               ))}
             </div>
+          )}
+
+          {/* Empty */}
+          {!gifLoading && !gifError && gifResults.length === 0 && (
+            <p className="text-xs text-neutral-400 py-4 text-center">
+              {gifSearch.trim() ? 'Không tìm thấy GIF nào' : 'Đang tải GIF...'}
+            </p>
           )}
         </div>
       )}

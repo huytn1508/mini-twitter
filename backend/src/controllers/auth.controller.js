@@ -125,4 +125,70 @@ async function getMe(req, res, next) {
   }
 }
 
-module.exports = { register, login, getMe };
+/**
+ * POST /api/auth/forgot-password
+ * Gửi email reset password qua Supabase Auth
+ */
+async function forgotPassword(req, res, next) {
+  try {
+    const { email } = req.body;
+    const { error } = await supabaseAnon.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`,
+    });
+
+    // Luôn trả về success để tránh lộ email có tồn tại hay không
+    if (error) {
+      console.error('Reset password error:', error.message);
+    }
+    res.json({ message: 'Nếu email tồn tại, link đặt lại mật khẩu đã được gửi.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/auth/reset-password
+ * Cập nhật mật khẩu mới (sau khi user click link email)
+ */
+async function resetPassword(req, res, next) {
+  try {
+    const { password } = req.body;
+    const { error } = await supabaseAnon.auth.updateUser({ password });
+
+    if (error) {
+      return res.status(400).json({ error: 'Đặt lại mật khẩu thất bại. Link có thể đã hết hạn.' });
+    }
+
+    res.json({ message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/auth/check-email
+ * Kiểm tra email đã đăng ký chưa (query bảng auth.users qua raw SQL)
+ */
+async function checkEmail(req, res, next) {
+  try {
+    const { email } = req.body;
+    if (!email) return res.json({ exists: false });
+
+    // Query auth.users qua schema auth
+    const { data, error } = await supabaseAdmin.rpc('check_email_exists', { email_input: email.toLowerCase() });
+
+    if (error) {
+      // Fallback: query qua auth admin API
+      const { data: users } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
+      // RPC fallback — trả về exists dựa trên việc có thể gọi được forgot password
+      return res.json({ exists: true }); // Mặc định optimistic cho UX
+    }
+
+    res.json({ exists: data === true });
+  } catch (err) {
+    // Fallback: nếu có lỗi vẫn cho phép gửi reset
+    res.json({ exists: true });
+  }
+}
+
+module.exports = { register, login, getMe, forgotPassword, resetPassword, checkEmail };

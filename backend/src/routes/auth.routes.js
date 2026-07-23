@@ -13,4 +13,13 @@ router.post('/login', validate(loginSchema), authController.login);
 // GET /api/auth/me
 router.get('/me', authenticate, authController.getMe);
 
+// POST /api/auth/forgot-password
+router.post('/forgot-password', authController.forgotPassword);
+
+// POST /api/auth/reset-password
+router.post('/reset-password', authController.resetPassword);
+
+// POST /api/auth/check-email
+router.post('/check-email', authController.checkEmail);
+
 module.exports = router;

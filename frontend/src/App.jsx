@@ -7,6 +7,8 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import HashtagPage from './pages/HashtagPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import Spinner from './components/ui/Spinner';
 
 // Guest route: chỉ cho user chưa login truy cập
@@ -48,6 +50,8 @@ function AppRoutes() {
       {/* Guest routes */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* 404 */}
       <Route path="*" element={<Layout><NotFoundPage /></Layout>} />

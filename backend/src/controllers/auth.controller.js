@@ -1,0 +1,128 @@
+const { supabaseAdmin, supabaseAnon } = require('../config/supabase');
+
+/**
+ * POST /api/auth/register
+ * Dùng supabaseAnon.auth.signUp() — tương thích với key định dạng sb_publishable_
+ */
+async function register(req, res, next) {
+  try {
+    const { email, password, username, display_name } = req.body;
+
+    // 1. Tạo user qua signUp (anon client)
+    const { data: authData, error: authError } = await supabaseAnon.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username, display_name },
+      },
+    });
+
+    if (authError) {
+      if (authError.message?.includes('already') || authError.code === 'user_already_exists') {
+        return res.status(409).json({ error: 'Email này đã được đăng ký' });
+      }
+      throw authError;
+    }
+
+    if (!authData.user) {
+      return res.status(500).json({ error: 'Đăng ký thất bại, thử lại sau' });
+    }
+
+    // 2. Cập nhật profile với username và display_name do user chọn
+    // Dùng supabaseAdmin (service_role) để bypass RLS
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({ username, display_name })
+      .eq('id', authData.user.id);
+
+    if (profileError) {
+      // Nếu username bị trùng, xóa user auth và báo lỗi
+      try { await supabaseAdmin.auth.admin.deleteUser(authData.user.id); } catch (_) {}
+      if (profileError.code === '23505') {
+        return res.status(409).json({ error: 'Username này đã tồn tại' });
+      }
+      throw profileError;
+    }
+
+    res.status(201).json({
+      message: 'Đăng ký thành công',
+      user: {
+        id: authData.user.id,
+        email: authData.user.email,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/auth/login
+ * Dùng supabaseAnon.auth.signInWithPassword()
+ */
+async function login(req, res, next) {
+  try {
+    const { email, password } = req.body;
+
+    const { data, error } = await supabaseAnon.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(401).json({ error: 'Email hoặc mật khẩu không đúng' });
+    }
+
+    // Lấy thêm profile info
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    res.json({
+      message: 'Đăng nhập thành công',
+      token: data.session.access_token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        username: profile?.username,
+        display_name: profile?.display_name,
+        avatar_url: profile?.avatar_url,
+        bio: profile?.bio,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/auth/me
+ * Trả về thông tin user hiện tại
+ */
+async function getMe(req, res, next) {
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error || !profile) {
+      return res.status(404).json({ error: 'Không tìm thấy profile' });
+    }
+
+    res.json({
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        ...profile,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, getMe };

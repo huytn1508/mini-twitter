@@ -8,7 +8,7 @@ import Avatar from '../ui/Avatar';
 
 const MAX_CHARS = 280;
 const GIPHY_API = 'https://api.giphy.com/v1/gifs';
-const GIPHY_KEY = 'YOUR_GIPHY_API_KEY'; // 👈 Đăng ký tại developers.giphy.com
+const GIPHY_KEY = 'dc6zaTOxFJmzC'; // GIPHY demo key — dùng cho portfolio, nếu lỗi thì đăng ký key mới tại developers.giphy.com
 
 export default function PostForm({ onPostCreated }) {
   const { user } = useAuth();
@@ -50,6 +50,15 @@ export default function PostForm({ onPostCreated }) {
     setContent(prev => prev + emoji.emoji);
     setShowEmoji(false);
   }, []);
+
+  // Load trending GIFs khi mở picker (không cần search)
+  const fetchTrending = async () => {
+    try {
+      const res = await fetch(`${GIPHY_API}/trending?api_key=${GIPHY_KEY}&limit=12&rating=g`);
+      const data = await res.json();
+      setGifResults(data.data || []);
+    } catch { /* trending fail silently */ }
+  };
 
   const searchGif = async () => {
     if (!gifSearch.trim()) return;
@@ -157,7 +166,11 @@ export default function PostForm({ onPostCreated }) {
                 </button>
 
                 {/* GIF button */}
-                <button type="button" onClick={() => setShowGif(!showGif)}
+                <button type="button" onClick={() => {
+                  const newShow = !showGif;
+                  setShowGif(newShow);
+                  if (newShow) fetchTrending();
+                }}
                   className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded-full transition-all" title="GIF">
                   <HiOutlinePhotograph className="w-5 h-5" />
                 </button>
@@ -208,7 +221,7 @@ export default function PostForm({ onPostCreated }) {
         </div>
       </form>
 
-      {/* GIF Search Popover */}
+      {/* GIF Popover */}
       {showGif && (
         <div className="mt-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200">
           <div className="flex gap-2 mb-3">
@@ -217,13 +230,20 @@ export default function PostForm({ onPostCreated }) {
               placeholder="Tìm GIF..." className="input-field !py-2 !text-sm" autoFocus />
             <button type="button" onClick={searchGif} className="btn-primary !py-2 !text-xs">Tìm</button>
           </div>
-          <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-            {gifResults.map(gif => (
-              <img key={gif.id} src={gif.images?.fixed_height_small?.url} alt={gif.title}
-                onClick={() => selectGif(gif)}
-                className="rounded-lg cursor-pointer hover:ring-2 ring-indigo-500 w-full object-cover" />
-            ))}
-          </div>
+          <p className="text-xs text-neutral-500 mb-2 font-medium">
+            {gifSearch.trim() ? `Kết quả: "${gifSearch}"` : '🔥 Xu hướng'}
+          </p>
+          {gifResults.length === 0 ? (
+            <p className="text-xs text-neutral-400 py-4 text-center">Đang tải GIF...</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+              {gifResults.map(gif => (
+                <img key={gif.id} src={gif.images?.fixed_height_small?.url} alt={gif.title}
+                  onClick={() => selectGif(gif)}
+                  className="rounded-lg cursor-pointer hover:ring-2 ring-indigo-500 w-full object-cover" />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

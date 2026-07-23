@@ -5,7 +5,11 @@ const createPostSchema = Joi.object({
     .messages({
       'string.max': 'Nội dung không được vượt quá 280 ký tự',
     }),
-});
+  is_sensitive: Joi.any().optional(),
+  scheduled_at: Joi.date().iso().optional().allow(null, ''),
+  gif_url: Joi.string().uri().optional().allow(null, ''),
+  video_url: Joi.string().uri().optional().allow(null, ''),
+}).unknown(true); // Cho phép FormData fields khác
 
 const updatePostSchema = Joi.object({
   content: Joi.string().min(1).max(280).required()

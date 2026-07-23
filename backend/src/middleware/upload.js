@@ -1,6 +1,4 @@
 const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 
 // Lưu file tạm trên disk trước khi upload lên Supabase Storage
 const storage = multer.memoryStorage();

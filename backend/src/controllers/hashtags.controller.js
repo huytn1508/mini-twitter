@@ -80,12 +80,16 @@ async function getPostsByTag(req, res, next) {
       .from('posts')
       .select(`*, profiles:user_id (username, display_name, avatar_url), likes (user_id), comments (id)`)
       .in('id', postIds)
+      .eq('is_published', true)
       .order('created_at', { ascending: false });
 
     const formattedPosts = (posts || []).map(post => ({
       id: post.id,
       content: post.content,
       image_url: post.image_url,
+      images: post.images || [],
+      is_sensitive: post.is_sensitive || false,
+      retweet_type: post.retweet_type || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -119,12 +123,11 @@ async function getTrending(req, res, next) {
     const { data, error } = await supabaseAdmin.rpc('get_trending', { period_interval: period });
 
     if (error) {
-      // Fallback: query trực tiếp
+      // Fallback: đếm từ post_hashtags (không lọc theo thời gian vì bảng này không có created_at)
       const { data: fallback } = await supabaseAdmin
         .from('post_hashtags')
         .select(`hashtag_id, hashtags:hashtag_id (name)`)
-        .gte('created_at', new Date(Date.now() - (period === '7 days' ? 7 : 1) * 86400000).toISOString())
-        .limit(100);
+        .limit(200);
 
       if (fallback) {
         const counts = {};
@@ -164,7 +167,7 @@ async function searchPosts(req, res, next) {
 
     if (error) throw error;
 
-    res.json({ posts: (posts || []).map(p => ({ id: p.id, content: p.content, image_url: p.image_url, created_at: p.created_at, user: { id: p.user_id, username: p.profiles?.username, display_name: p.profiles?.display_name, avatar_url: p.profiles?.avatar_url }, likes_count: p.likes?.length || 0, comments_count: p.comments?.length || 0 })), pagination: { page, limit, total: count, totalPages: Math.ceil(count / limit) } });
+    res.json({ posts: (posts || []).map(p => ({ id: p.id, content: p.content, image_url: p.image_url, images: p.images || [], is_sensitive: p.is_sensitive || false, retweet_type: p.retweet_type || null, created_at: p.created_at, user: { id: p.user_id, username: p.profiles?.username, display_name: p.profiles?.display_name, avatar_url: p.profiles?.avatar_url }, likes_count: p.likes?.length || 0, comments_count: p.comments?.length || 0 })), pagination: { page, limit, total: count, totalPages: Math.ceil(count / limit) } });
   } catch (err) { next(err); }
 }
 

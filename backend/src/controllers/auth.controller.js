@@ -209,10 +209,8 @@ async function checkEmail(req, res, next) {
     const { data, error } = await supabaseAdmin.rpc('check_email_exists', { email_input: email.toLowerCase() });
 
     if (error) {
-      // Fallback: query qua auth admin API
-      const { data: users } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
-      // RPC fallback — trả về exists dựa trên việc có thể gọi được forgot password
-      return res.json({ exists: true }); // Mặc định optimistic cho UX
+      // RPC không hoạt động — fallback: mặc định true để UX không bị chặn
+      return res.json({ exists: true });
     }
 
     res.json({ exists: data === true });

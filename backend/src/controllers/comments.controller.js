@@ -109,9 +109,10 @@ async function create(req, res, next) {
  */
 async function remove(req, res, next) {
   try {
-    const { id } = req.params;
-    const { data: existing } = await supabaseAdmin.from('comments').select('user_id').eq('id', id).single();
+    const { id, postId } = req.params;
+    const { data: existing } = await supabaseAdmin.from('comments').select('user_id,post_id').eq('id', id).single();
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy bình luận' });
+    if (existing.post_id !== parseInt(postId)) return res.status(404).json({ error: 'Không tìm thấy bình luận' });
     if (existing.user_id !== req.user.id) return res.status(403).json({ error: 'Bạn không có quyền xóa bình luận này' });
     await supabaseAdmin.from('comments').delete().eq('id', id);
     res.json({ message: 'Đã xóa bình luận' });

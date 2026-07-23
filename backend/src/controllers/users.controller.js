@@ -57,7 +57,7 @@ async function getProfile(req, res, next) {
     ] = await Promise.all([
       supabaseAdmin.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', profile.id),
       supabaseAdmin.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', profile.id),
-      supabaseAdmin.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', profile.id),
+      supabaseAdmin.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', profile.id).eq('is_published', true),
     ]);
 
     // Nếu user đã login, kiểm tra có đang follow profile này không
@@ -160,15 +160,16 @@ async function getUserPosts(req, res, next) {
       return res.status(404).json({ error: 'Không tìm thấy người dùng' });
     }
 
-    const { data: posts, error, count } = await supabaseAdmin
+    const isOwnProfile = req.user && req.user.id === profile.id;
+    let query = supabaseAdmin
       .from('posts')
-      .select(`
-        *,
-        profiles:user_id (username, display_name, avatar_url),
-        likes (user_id),
-        comments (id)
-      `, { count: 'exact' })
-      .eq('user_id', profile.id)
+      .select(`*, profiles:user_id (username, display_name, avatar_url), likes (user_id), comments (id)`, { count: 'exact' })
+      .eq('user_id', profile.id);
+
+    // Chỉ chủ profile mới xem được bài chưa publish
+    if (!isOwnProfile) query = query.eq('is_published', true);
+
+    const { data: posts, error, count } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -178,6 +179,9 @@ async function getUserPosts(req, res, next) {
       id: post.id,
       content: post.content,
       image_url: post.image_url,
+      images: post.images || [],
+      is_sensitive: post.is_sensitive || false,
+      retweet_type: post.retweet_type || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,

@@ -47,7 +47,7 @@ async function getMessages(req, res, next) {
 
     const { data, error } = await supabaseAdmin
       .from('messages')
-      .select(`*, sender:profiles!messages_sender_id_fkey (username, display_name, avatar_url)`)
+      .select(`*, sender:profiles(username, display_name, avatar_url)`)
       .eq('conversation_id', id)
       .order('created_at', { ascending: true })
       .limit(50);

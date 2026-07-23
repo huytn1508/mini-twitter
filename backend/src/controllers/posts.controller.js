@@ -69,6 +69,7 @@ async function getAll(req, res, next) {
       image_url: post.image_url,
       images: post.images || [],
       is_sensitive: post.is_sensitive || false,
+      retweet_type: post.retweet_type || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -133,6 +134,7 @@ async function getFollowing(req, res, next) {
         comments (id)
       `, { count: 'exact' })
       .in('user_id', followingIds)
+      .eq('is_published', true)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -142,6 +144,9 @@ async function getFollowing(req, res, next) {
       id: post.id,
       content: post.content,
       image_url: post.image_url,
+      images: post.images || [],
+      is_sensitive: post.is_sensitive || false,
+      retweet_type: post.retweet_type || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -216,6 +221,8 @@ async function create(req, res, next) {
         id: post.id,
         content: post.content,
         image_url: post.image_url,
+        images: post.images || [],
+        is_sensitive: post.is_sensitive || false,
         created_at: post.created_at,
         user: {
           id: post.user_id,
@@ -261,11 +268,19 @@ async function getById(req, res, next) {
       return res.status(404).json({ error: 'Không tìm thấy bài viết' });
     }
 
+    // Chặn xem scheduled posts (trừ chủ bài)
+    if (!post.is_published && (!req.user || req.user.id !== post.user_id)) {
+      return res.status(404).json({ error: 'Không tìm thấy bài viết' });
+    }
+
     res.json({
       post: {
         id: post.id,
         content: post.content,
         image_url: post.image_url,
+        images: post.images || [],
+        is_sensitive: post.is_sensitive || false,
+        retweet_type: post.retweet_type || null,
         created_at: post.created_at,
         user: {
           id: post.user_id,
@@ -336,12 +351,17 @@ async function update(req, res, next) {
 
     if (error) throw error;
 
+    // Sync hashtags sau khi update content
+    const hashtags = await syncPostHashtags(post.id, content);
+
     res.json({
       message: 'Cập nhật thành công',
       post: {
         id: post.id,
         content: post.content,
         image_url: post.image_url,
+        images: post.images || [],
+        is_sensitive: post.is_sensitive || false,
         created_at: post.created_at,
         user: {
           id: post.user_id,
@@ -349,6 +369,7 @@ async function update(req, res, next) {
           display_name: post.profiles?.display_name,
           avatar_url: post.profiles?.avatar_url,
         },
+        hashtags,
       },
     });
   } catch (err) {
@@ -420,7 +441,7 @@ async function retweet(req, res, next) {
 
     if (error) throw error;
 
-    res.status(201).json({ message: 'Đã retweet', post: formatPostWithRetweet(post, req.user) });
+    res.status(201).json({ message: 'Đã retweet', post: await formatPostWithRetweet(post, req.user) });
   } catch (err) {
     next(err);
   }
@@ -456,7 +477,8 @@ async function quoteRetweet(req, res, next) {
     // Sync hashtags cho quote
     const hashtags = await syncPostHashtags(post.id, content);
 
-    res.status(201).json({ message: 'Đã quote', post: { ...formatPostWithRetweet(post, req.user), hashtags } });
+    const formatted = await formatPostWithRetweet(post, req.user);
+    res.status(201).json({ message: 'Đã quote', post: { ...formatted, hashtags } });
   } catch (err) {
     next(err);
   }
@@ -470,6 +492,8 @@ async function formatPostWithRetweet(post, authUser) {
     id: post.id,
     content: post.content,
     image_url: post.image_url,
+    images: post.images || [],
+    is_sensitive: post.is_sensitive || false,
     created_at: post.created_at,
     retweet_type: post.retweet_type || null,
     user: post.profiles ? {

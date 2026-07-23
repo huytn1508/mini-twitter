@@ -51,7 +51,7 @@ export default function Navbar() {
                 {chatUnread > 0 && <span className="absolute -top-0.5 -right-0.5 bg-indigo-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{chatUnread > 9 ? '9+' : chatUnread}</span>}
               </Link>
               {/* Notification bell */}
-              <Link to="/" className="relative p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Thông báo">
+              <Link to="/notifications" className="relative p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Thông báo">
                 <HiOutlineBell className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center">

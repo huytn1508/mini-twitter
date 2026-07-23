@@ -12,6 +12,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ExplorePage from './pages/ExplorePage';
 import MessagesPage from './pages/MessagesPage';
 import ChatPage from './pages/ChatPage';
+import NotificationsPage from './pages/NotificationsPage';
 import Spinner from './components/ui/Spinner';
 
 // Guest route: chỉ cho user chưa login truy cập
@@ -52,6 +53,7 @@ function AppRoutes() {
       <Route path="/explore" element={<Layout><ExplorePage /></Layout>} />
       <Route path="/messages" element={<Layout><MessagesPage /></Layout>} />
       <Route path="/messages/:id" element={<Layout><ChatPage /></Layout>} />
+      <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
 
       {/* Guest routes */}
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />

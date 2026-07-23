@@ -17,7 +17,12 @@ const app = express();
 
 // ─── Middleware ────────────────────────────────────────────
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'https://mini-twitter-tau-rosy.vercel.app',
+    env.FRONTEND_URL,
+  ].filter(Boolean),
   credentials: true,
 }));
 app.use(express.json());

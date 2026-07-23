@@ -39,6 +39,11 @@ export default function PostCard({ post, onUpdate, onDelete }) {
   const [retweeting, setRetweeting] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [quoteContent, setQuoteContent] = useState('');
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message }
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 2500);
+  };
 
   const handleLike = async () => {
     if (!user || liking) return;
@@ -56,7 +61,10 @@ export default function PostCard({ post, onUpdate, onDelete }) {
     setRetweeting(true);
     try {
       await postsAPI.retweet(post.id);
-    } catch (err) { console.error('Retweet failed:', err); }
+      showToast('success', 'Đã retweet!');
+    } catch (err) {
+      showToast('error', err.response?.data?.error || 'Retweet thất bại');
+    }
     finally { setRetweeting(false); }
   };
 
@@ -67,7 +75,10 @@ export default function PostCard({ post, onUpdate, onDelete }) {
       await postsAPI.quote(post.id, quoteContent.trim());
       setShowQuoteModal(false);
       setQuoteContent('');
-    } catch (err) { console.error('Quote failed:', err); }
+      showToast('success', 'Đã quote tweet!');
+    } catch (err) {
+      showToast('error', err.response?.data?.error || 'Quote thất bại');
+    }
     finally { setRetweeting(false); }
   };
 
@@ -88,7 +99,16 @@ export default function PostCard({ post, onUpdate, onDelete }) {
   const isQuote = post.retweet_type === 'quote';
 
   return (
-    <div className="card hover:shadow-md">
+    <div className="card hover:shadow-md relative">
+      {/* Toast notification */}
+      {toast && (
+        <div className={`absolute top-3 right-3 z-10 px-4 py-2 rounded-xl text-sm font-medium shadow-lg animate-pulse ${
+          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-rose-500 text-white'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Retweet indicator */}
       {isRetweet && (
         <div className="flex items-center gap-2 text-xs text-neutral-500 font-medium mb-3">

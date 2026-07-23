@@ -1,6 +1,7 @@
 const { supabaseAdmin } = require('../config/supabase');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
+const enrichRetweets = require('../utils/enrichRetweets');
 
 /**
  * Upload avatar lên Supabase Storage.
@@ -175,13 +176,14 @@ async function getUserPosts(req, res, next) {
 
     if (error) throw error;
 
-    const formattedPosts = posts.map(post => ({
+    let formattedPosts = posts.map(post => ({
       id: post.id,
       content: post.content,
       image_url: post.image_url,
       images: post.images || [],
       is_sensitive: post.is_sensitive || false,
       retweet_type: post.retweet_type || null,
+      retweet_post_id: post.retweet_post_id || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -195,6 +197,8 @@ async function getUserPosts(req, res, next) {
         ? post.likes?.some(like => like.user_id === req.user.id)
         : false,
     }));
+
+    formattedPosts = await enrichRetweets(formattedPosts);
 
     res.json({
       posts: formattedPosts,

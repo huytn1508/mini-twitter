@@ -2,6 +2,7 @@ const { supabaseAdmin } = require('../config/supabase');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
 const { syncPostHashtags } = require('./hashtags.controller');
+const enrichRetweets = require('../utils/enrichRetweets');
 
 /**
  * Upload ảnh lên Supabase Storage.
@@ -63,13 +64,14 @@ async function getAll(req, res, next) {
     if (error) throw error;
 
     // Format dữ liệu trả về
-    const formattedPosts = posts.map(post => ({
+    let formattedPosts = posts.map(post => ({
       id: post.id,
       content: post.content,
       image_url: post.image_url,
       images: post.images || [],
       is_sensitive: post.is_sensitive || false,
       retweet_type: post.retweet_type || null,
+      retweet_post_id: post.retweet_post_id || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -79,10 +81,10 @@ async function getAll(req, res, next) {
       },
       likes_count: post.likes?.length || 0,
       comments_count: post.comments?.length || 0,
-      is_liked: req.user
-        ? post.likes?.some(like => like.user_id === req.user.id)
-        : false,
+      is_liked: post.likes?.some(like => like.user_id === req.user.id),
     }));
+
+    formattedPosts = await enrichRetweets(formattedPosts);
 
     res.json({
       posts: formattedPosts,
@@ -140,13 +142,14 @@ async function getFollowing(req, res, next) {
 
     if (error) throw error;
 
-    const formattedPosts = posts.map(post => ({
+    let formattedPosts = posts.map(post => ({
       id: post.id,
       content: post.content,
       image_url: post.image_url,
       images: post.images || [],
       is_sensitive: post.is_sensitive || false,
       retweet_type: post.retweet_type || null,
+      retweet_post_id: post.retweet_post_id || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -158,6 +161,8 @@ async function getFollowing(req, res, next) {
       comments_count: post.comments?.length || 0,
       is_liked: post.likes?.some(like => like.user_id === req.user.id),
     }));
+
+    formattedPosts = await enrichRetweets(formattedPosts);
 
     res.json({
       posts: formattedPosts,
@@ -421,10 +426,17 @@ async function retweet(req, res, next) {
   try {
     const { id } = req.params;
 
-    // Kiểm tra post gốc tồn tại
+    // Lấy post gốc (cần user_id để check self-retweet + tạo notification)
     const { data: original } = await supabaseAdmin
-      .from('posts').select('id').eq('id', id).single();
+      .from('posts').select('id,user_id').eq('id', id).single();
     if (!original) return res.status(404).json({ error: 'Không tìm thấy bài viết' });
+    if (original.user_id === req.user.id) return res.status(400).json({ error: 'Không thể retweet bài của chính mình' });
+
+    // Check trùng lặp
+    const { data: existing } = await supabaseAdmin
+      .from('posts')
+      .select('id').eq('user_id', req.user.id).eq('retweet_post_id', parseInt(id)).eq('retweet_type', 'retweet').maybeSingle();
+    if (existing) return res.status(400).json({ error: 'Bạn đã retweet bài này rồi' });
 
     // Tạo post retweet (không content)
     const { data: post, error } = await supabaseAdmin
@@ -440,6 +452,10 @@ async function retweet(req, res, next) {
       .single();
 
     if (error) throw error;
+
+    // Tạo notification cho chủ post gốc
+    const { createNotification } = require('./notifications.controller');
+    await createNotification({ userId: original.user_id, actorId: req.user.id, type: 'retweet', referenceId: post.id });
 
     res.status(201).json({ message: 'Đã retweet', post: await formatPostWithRetweet(post, req.user) });
   } catch (err) {
@@ -457,7 +473,7 @@ async function quoteRetweet(req, res, next) {
     const { content } = req.body;
 
     const { data: original } = await supabaseAdmin
-      .from('posts').select('id').eq('id', id).single();
+      .from('posts').select('id,user_id').eq('id', id).single();
     if (!original) return res.status(404).json({ error: 'Không tìm thấy bài viết' });
 
     const { data: post, error } = await supabaseAdmin
@@ -477,6 +493,12 @@ async function quoteRetweet(req, res, next) {
     // Sync hashtags cho quote
     const hashtags = await syncPostHashtags(post.id, content);
 
+    // Tạo notification nếu quote bài của người khác
+    if (original.user_id !== req.user.id) {
+      const { createNotification } = require('./notifications.controller');
+      await createNotification({ userId: original.user_id, actorId: req.user.id, type: 'quote', referenceId: post.id });
+    }
+
     const formatted = await formatPostWithRetweet(post, req.user);
     res.status(201).json({ message: 'Đã quote', post: { ...formatted, hashtags } });
   } catch (err) {
@@ -485,7 +507,7 @@ async function quoteRetweet(req, res, next) {
 }
 
 /**
- * Format post có kèm retweet info
+ * Format post có kèm retweet info (dùng cho response create retweet/quote)
  */
 async function formatPostWithRetweet(post, authUser) {
   const formatted = {

@@ -1,4 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
+const enrichRetweets = require('../utils/enrichRetweets');
 
 /**
  * Helper: Extract hashtags from text
@@ -83,13 +84,14 @@ async function getPostsByTag(req, res, next) {
       .eq('is_published', true)
       .order('created_at', { ascending: false });
 
-    const formattedPosts = (posts || []).map(post => ({
+    let formattedPosts = (posts || []).map(post => ({
       id: post.id,
       content: post.content,
       image_url: post.image_url,
       images: post.images || [],
       is_sensitive: post.is_sensitive || false,
       retweet_type: post.retweet_type || null,
+      retweet_post_id: post.retweet_post_id || null,
       created_at: post.created_at,
       user: {
         id: post.user_id,
@@ -101,6 +103,8 @@ async function getPostsByTag(req, res, next) {
       comments_count: post.comments?.length || 0,
       is_liked: req.user ? post.likes?.some(l => l.user_id === req.user.id) : false,
     }));
+
+    formattedPosts = await enrichRetweets(formattedPosts);
 
     res.json({
       tag: tagName,
@@ -167,7 +171,9 @@ async function searchPosts(req, res, next) {
 
     if (error) throw error;
 
-    res.json({ posts: (posts || []).map(p => ({ id: p.id, content: p.content, image_url: p.image_url, images: p.images || [], is_sensitive: p.is_sensitive || false, retweet_type: p.retweet_type || null, created_at: p.created_at, user: { id: p.user_id, username: p.profiles?.username, display_name: p.profiles?.display_name, avatar_url: p.profiles?.avatar_url }, likes_count: p.likes?.length || 0, comments_count: p.comments?.length || 0 })), pagination: { page, limit, total: count, totalPages: Math.ceil(count / limit) } });
+        let result = (posts || []).map(p => ({ id: p.id, content: p.content, image_url: p.image_url, images: p.images || [], is_sensitive: p.is_sensitive || false, retweet_type: p.retweet_type || null, retweet_post_id: p.retweet_post_id || null, created_at: p.created_at, user: { id: p.user_id, username: p.profiles?.username, display_name: p.profiles?.display_name, avatar_url: p.profiles?.avatar_url }, likes_count: p.likes?.length || 0, comments_count: p.comments?.length || 0 }));
+    result = await enrichRetweets(result);
+    res.json({ posts: result, pagination: { page, limit, total: count, totalPages: Math.ceil(count / limit) } });
   } catch (err) { next(err); }
 }
 

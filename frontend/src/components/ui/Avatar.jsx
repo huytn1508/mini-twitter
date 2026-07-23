@@ -9,14 +9,14 @@ export default function Avatar({ src, alt, size = 'md', className = '' }) {
       <img
         src={src}
         alt={alt || 'avatar'}
-        className={`${sizes[size]} rounded-full object-cover flex-shrink-0 ${className}`}
+        className={`${sizes[size]} rounded-full object-cover flex-shrink-0 ring-2 ring-neutral-100 ${className}`}
       />
     );
   }
 
   return (
-    <div className={`${sizes[size]} rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 ${className}`}>
-      <HiUser className={`${iconSizes[size]} text-gray-400`} />
+    <div className={`${sizes[size]} rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0 ring-2 ring-neutral-100 ${className}`}>
+      <HiUser className={`${iconSizes[size]} text-neutral-400`} />
     </div>
   );
 }

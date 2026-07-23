@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { HiOutlineHome, HiOutlineUser, HiOutlineLogout, HiLogin } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineLogout } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../ui/Avatar';
 
@@ -13,27 +13,28 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white border-b border-neutral-100 sticky top-0 z-50 shadow-sm">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="text-xl font-bold text-blue-500 hover:text-blue-600 transition-colors">
-          🐦 Mini Twitter
+        <Link to="/" className="flex items-baseline gap-0.5 select-none">
+          <span className="text-xl font-bold text-indigo-600 tracking-tight">Mini</span>
+          <span className="text-xl font-light text-neutral-400 tracking-tight">Twitter</span>
         </Link>
 
         {/* Navigation */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
-              <Link to="/" className="text-gray-600 hover:text-blue-500 transition-colors" title="Trang chủ">
-                <HiOutlineHome className="w-6 h-6" />
+              <Link to="/" className="p-2 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-50 rounded-full transition-all" title="Trang chủ">
+                <HiOutlineHome className="w-5 h-5" />
               </Link>
-              <Link to={`/profile/${user.username}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Link to={`/profile/${user.username}`} className="flex items-center gap-2 p-1.5 hover:bg-neutral-50 rounded-full transition-all pr-3">
                 <Avatar src={user.avatar_url} size="sm" />
-                <span className="hidden sm:inline text-sm font-medium text-gray-700">{user.display_name}</span>
+                <span className="hidden sm:inline text-sm font-medium text-neutral-700">{user.display_name}</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-gray-500 hover:text-red-500 transition-colors"
+                className="p-2 text-neutral-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all"
                 title="Đăng xuất"
               >
                 <HiOutlineLogout className="w-5 h-5" />
@@ -41,10 +42,8 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="btn-outline text-sm flex items-center gap-1">
-                <HiLogin className="w-4 h-4" /> Đăng nhập
-              </Link>
-              <Link to="/register" className="btn-primary text-sm">Đăng ký</Link>
+              <Link to="/login" className="btn-ghost text-sm">Đăng nhập</Link>
+              <Link to="/register" className="btn-primary text-sm !py-2">Đăng ký</Link>
             </>
           )}
         </div>

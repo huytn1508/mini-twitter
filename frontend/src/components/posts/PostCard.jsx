@@ -56,58 +56,67 @@ export default function PostCard({ post, onUpdate, onDelete }) {
   const isOwner = user?.id === post.user?.id;
 
   return (
-    <div className="card">
-      {/* Header: Avatar + User Info + Time */}
+    <div className="card hover:shadow-md">
+      {/* Header */}
       <div className="flex items-start gap-3">
         <Link to={`/profile/${post.user?.username}`}>
           <Avatar src={post.user?.avatar_url} alt={post.user?.display_name} />
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link to={`/profile/${post.user?.username}`} className="font-semibold text-gray-900 hover:underline truncate">
+            <Link
+              to={`/profile/${post.user?.username}`}
+              className="font-semibold text-sm text-neutral-900 hover:underline truncate"
+            >
               {post.user?.display_name}
             </Link>
-            <span className="text-gray-500 text-sm">@{post.user?.username}</span>
-            <span className="text-gray-400 text-sm">·</span>
-            <span className="text-gray-400 text-sm">{formatDate(post.created_at)}</span>
+            <span className="text-neutral-500 text-sm font-normal">@{post.user?.username}</span>
+            <span className="text-neutral-300 text-sm">·</span>
+            <span className="text-neutral-400 text-xs">{formatDate(post.created_at)}</span>
           </div>
 
           {/* Content */}
-          <p className="mt-2 text-gray-800 whitespace-pre-wrap break-words">{post.content}</p>
+          <p className="mt-2 text-[15px] text-neutral-800 whitespace-pre-wrap break-words leading-relaxed">
+            {post.content}
+          </p>
 
           {/* Image */}
           {post.image_url && (
             <img
               src={post.image_url}
               alt="Post image"
-              className="mt-3 rounded-xl max-h-96 w-full object-cover border border-gray-100"
+              className="mt-3 rounded-xl max-h-96 w-full object-cover border border-neutral-100"
               loading="lazy"
             />
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-6 mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-5 mt-3 pt-3 border-t border-neutral-100">
             {/* Like */}
             <button
               onClick={handleLike}
               disabled={!user || liking}
-              className={`flex items-center gap-1.5 text-sm transition-colors ${
-                isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                isLiked
+                  ? 'text-rose-500'
+                  : 'text-neutral-400 hover:text-rose-500'
               } disabled:opacity-50`}
             >
-              {isLiked ? <HiHeart className="w-5 h-5" /> : <HiOutlineHeart className="w-5 h-5" />}
-              <span>{likesCount > 0 ? likesCount : ''}</span>
+              {isLiked ? <HiHeart className="w-[18px] h-[18px]" /> : <HiOutlineHeart className="w-[18px] h-[18px]" />}
+              {likesCount > 0 && <span>{likesCount}</span>}
             </button>
 
             {/* Comment toggle */}
             <button
               onClick={() => setShowComments(!showComments)}
-              className={`flex items-center gap-1.5 text-sm transition-colors ${
-                showComments ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                showComments
+                  ? 'text-indigo-600'
+                  : 'text-neutral-400 hover:text-indigo-600'
               }`}
             >
-              <HiOutlineChat className="w-5 h-5" />
-              <span>{commentsCount > 0 ? commentsCount : ''}</span>
+              <HiOutlineChat className="w-[18px] h-[18px]" />
+              {commentsCount > 0 && <span>{commentsCount}</span>}
             </button>
 
             {/* Delete (owner only) */}
@@ -115,16 +124,17 @@ export default function PostCard({ post, onUpdate, onDelete }) {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors ml-auto"
+                className="flex items-center gap-1 text-sm text-neutral-300 hover:text-rose-500 transition-colors ml-auto"
+                title="Xóa bài viết"
               >
                 <HiOutlineTrash className="w-4 h-4" />
               </button>
             )}
           </div>
 
-          {/* Comments Section (expandable) */}
+          {/* Comments Section */}
           {showComments && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="mt-3 pt-3 border-t border-neutral-100">
               {user && <CommentForm postId={post.id} onCommentAdded={handleCommentAdded} />}
               <CommentList
                 postId={post.id}

@@ -68,15 +68,13 @@ export default function ProfilePage() {
 
       {/* Edit Profile Button (owner only) */}
       {isOwnProfile && !showEditForm && (
-        <div className="mb-4">
-          <button onClick={() => setShowEditForm(true)} className="btn-outline text-sm">
-            Chỉnh sửa profile
-          </button>
+        <div className="mb-5">
+          <button onClick={() => setShowEditForm(true)} className="btn-outline text-sm">Chỉnh sửa profile</button>
         </div>
       )}
 
       {/* Posts */}
-      <h2 className="font-bold text-lg text-gray-900 mb-4">Bài viết</h2>
+      <h2 className="font-bold text-lg text-neutral-900 mb-4">Bài viết</h2>
       <PostList
         posts={posts}
         loading={postsLoading}

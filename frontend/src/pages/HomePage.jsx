@@ -6,7 +6,7 @@ import PostList from '../components/posts/PostList';
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth();
-  const [tab, setTab] = useState('all'); // 'all' | 'following'
+  const [tab, setTab] = useState('all');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,9 +34,7 @@ export default function HomePage() {
   }, [tab]);
 
   const handlePostCreated = (newPost) => {
-    if (tab === 'all') {
-      setPosts(prev => [newPost, ...prev]);
-    }
+    if (tab === 'all') setPosts(prev => [newPost, ...prev]);
   };
 
   const handlePostDelete = (postId) => {
@@ -51,14 +49,14 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Tab: All / Following */}
-      <div className="flex border-b border-gray-200 mb-4">
+      {/* Tab Bar */}
+      <div className="flex border-b border-neutral-200 mb-5">
         <button
           onClick={() => setTab('all')}
-          className={`flex-1 py-3 text-center font-semibold text-sm transition-colors border-b-2 ${
+          className={`flex-1 py-3 text-center font-semibold text-sm transition-all border-b-2 ${
             tab === 'all'
-              ? 'border-blue-500 text-blue-500'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-neutral-500 hover:text-neutral-700'
           }`}
         >
           Tất cả
@@ -66,10 +64,10 @@ export default function HomePage() {
         <button
           onClick={() => setTab('following')}
           disabled={!isAuthenticated}
-          className={`flex-1 py-3 text-center font-semibold text-sm transition-colors border-b-2 ${
+          className={`flex-1 py-3 text-center font-semibold text-sm transition-all border-b-2 ${
             tab === 'following'
-              ? 'border-blue-500 text-blue-500'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-neutral-500 hover:text-neutral-700'
           } disabled:opacity-50`}
         >
           Đang follow
@@ -95,12 +93,10 @@ export default function HomePage() {
         }
       />
 
-      {/* Load More (optional) */}
+      {/* Load More */}
       {posts.length > 0 && !loading && (
         <div className="text-center mt-6">
-          <button onClick={handleLoadMore} className="btn-outline text-sm">
-            Xem thêm
-          </button>
+          <button onClick={handleLoadMore} className="btn-outline text-sm">Xem thêm</button>
         </div>
       )}
     </div>

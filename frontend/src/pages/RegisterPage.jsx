@@ -31,17 +31,9 @@ export default function RegisterPage() {
     e.preventDefault();
     setApiError('');
     if (!validate()) return;
-
     setLoading(true);
     try {
-      // 1. Register
-      await register({
-        email: form.email,
-        password: form.password,
-        username: form.username,
-        display_name: form.display_name,
-      });
-      // 2. Auto login
+      await register({ email: form.email, password: form.password, username: form.username, display_name: form.display_name });
       await authLogin(form.email, form.password);
       navigate('/');
     } catch (err) {
@@ -52,53 +44,58 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] px-4 py-8">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-500 mb-2">🐦 Mini Twitter</h1>
-          <p className="text-gray-500">Tạo tài khoản mới</p>
+          <Link to="/" className="inline-flex items-baseline gap-0.5 select-none">
+            <span className="text-2xl font-bold text-indigo-600 tracking-tight">Mini</span>
+            <span className="text-2xl font-light text-neutral-400 tracking-tight">Twitter</span>
+          </Link>
+          <p className="text-neutral-500 text-sm mt-3">Tạo tài khoản mới</p>
         </div>
 
+        {/* Form */}
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-4">
             {apiError && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+              <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3 rounded-xl">
                 {apiError}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Email</label>
               <input type="email" value={form.email} onChange={handleChange('email')} className="input-field" placeholder="your@email.com" autoFocus />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-rose-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tên hiển thị</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Tên hiển thị</label>
               <input type="text" value={form.display_name} onChange={handleChange('display_name')} className="input-field" placeholder="Nguyễn Văn A" maxLength={50} />
-              {errors.display_name && <p className="text-red-500 text-xs mt-1">{errors.display_name}</p>}
+              {errors.display_name && <p className="text-rose-500 text-xs mt-1">{errors.display_name}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Username</label>
               <input type="text" value={form.username} onChange={handleChange('username')} className="input-field" placeholder="nguyenvana" maxLength={30} />
-              {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
+              {errors.username && <p className="text-rose-500 text-xs mt-1">{errors.username}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">Mật khẩu</label>
               <input type="password" value={form.password} onChange={handleChange('password')} className="input-field" placeholder="Ít nhất 6 ký tự" />
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+              {errors.password && <p className="text-rose-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3">
+            <button type="submit" disabled={loading} className="btn-primary w-full !py-3">
               {loading ? 'Đang đăng ký...' : 'Đăng ký'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-4">
+          <p className="text-center text-sm text-neutral-500 mt-5">
             Đã có tài khoản?{' '}
-            <Link to="/login" className="text-blue-500 hover:underline font-medium">Đăng nhập</Link>
+            <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">Đăng nhập</Link>
           </p>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { HiCamera } from 'react-icons/hi';
 import { usersAPI } from '../../api/users';
 import { useAuth } from '../../context/AuthContext';
-import { validateDisplayName, validateUsername, validateEmail } from '../../utils/validators';
+import { validateDisplayName, validateUsername } from '../../utils/validators';
 import Avatar from '../ui/Avatar';
 
 export default function EditProfileForm({ onClose }) {
@@ -20,10 +20,7 @@ export default function EditProfileForm({ onClose }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors({ avatar: 'Ảnh không được vượt quá 5MB' });
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { setErrors({ avatar: 'Ảnh không được vượt quá 5MB' }); return; }
     setAvatar(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
@@ -41,7 +38,6 @@ export default function EditProfileForm({ onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-
     setSaving(true);
     try {
       const formData = new FormData();
@@ -49,7 +45,6 @@ export default function EditProfileForm({ onClose }) {
       formData.append('username', username.trim());
       formData.append('bio', bio.trim());
       if (avatar) formData.append('avatar', avatar);
-
       const res = await usersAPI.updateProfile(formData);
       updateUser({ ...user, ...res.data.profile });
       onClose?.();
@@ -66,7 +61,7 @@ export default function EditProfileForm({ onClose }) {
 
   return (
     <div className="card mb-6">
-      <h2 className="text-lg font-bold mb-4">Chỉnh sửa profile</h2>
+      <h2 className="text-lg font-bold text-neutral-900 mb-5">Chỉnh sửa profile</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Avatar */}
@@ -76,45 +71,33 @@ export default function EditProfileForm({ onClose }) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1.5
-                         hover:bg-blue-600 transition-colors shadow-lg"
+              className="absolute bottom-0 right-0 bg-indigo-600 text-white rounded-full p-1.5
+                         hover:bg-indigo-700 transition-all shadow-lg"
             >
               <HiCamera className="w-4 h-4" />
             </button>
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarSelect} className="hidden" />
-          {errors.avatar && <p className="text-red-500 text-xs">{errors.avatar}</p>}
+          {errors.avatar && <p className="text-rose-500 text-xs">{errors.avatar}</p>}
         </div>
 
         {/* Display Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tên hiển thị</label>
-          <input
-            type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="input-field"
-            maxLength={50}
-          />
-          {errors.display_name && <p className="text-red-500 text-xs mt-1">{errors.display_name}</p>}
+          <label className="block text-sm font-medium text-neutral-700 mb-1.5">Tên hiển thị</label>
+          <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="input-field" maxLength={50} />
+          {errors.display_name && <p className="text-rose-500 text-xs mt-1">{errors.display_name}</p>}
         </div>
 
         {/* Username */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="input-field"
-            maxLength={30}
-          />
-          {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
+          <label className="block text-sm font-medium text-neutral-700 mb-1.5">Username</label>
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="input-field" maxLength={30} />
+          {errors.username && <p className="text-rose-500 text-xs mt-1">{errors.username}</p>}
         </div>
 
         {/* Bio */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1.5">Bio</label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -123,14 +106,14 @@ export default function EditProfileForm({ onClose }) {
             maxLength={160}
             placeholder="Viết gì đó về bạn..."
           />
-          <p className="text-xs text-gray-400 mt-1">{bio.length}/160</p>
+          <p className="text-xs text-neutral-400 mt-1">{bio.length}/160</p>
         </div>
 
-        {/* Error */}
-        {errors.general && <p className="text-red-500 text-sm text-center">{errors.general}</p>}
+        {/* General error */}
+        {errors.general && <p className="text-rose-500 text-sm text-center">{errors.general}</p>}
 
         {/* Buttons */}
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end pt-2">
           <button type="button" onClick={onClose} className="btn-outline text-sm">Hủy</button>
           <button type="submit" disabled={saving} className="btn-primary text-sm">
             {saving ? 'Đang lưu...' : 'Lưu thay đổi'}

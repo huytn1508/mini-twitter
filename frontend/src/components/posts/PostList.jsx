@@ -1,12 +1,12 @@
 import PostCard from './PostCard';
-import Spinner from '../ui/Spinner';
 import EmptyState from '../ui/EmptyState';
 import ErrorMessage from '../ui/ErrorMessage';
+import { SkeletonPostList } from '../ui/SkeletonPost';
 import { HiOutlineNewspaper } from 'react-icons/hi';
 
 export default function PostList({ posts, loading, error, onRetry, onPostDelete, emptyMessage }) {
   if (loading) {
-    return <Spinner size="lg" className="py-16" />;
+    return <SkeletonPostList count={3} />;
   }
 
   if (error) {
@@ -26,11 +26,7 @@ export default function PostList({ posts, loading, error, onRetry, onPostDelete,
   return (
     <div className="space-y-4">
       {posts.map(post => (
-        <PostCard
-          key={post.id}
-          post={post}
-          onDelete={onPostDelete}
-        />
+        <PostCard key={post.id} post={post} onDelete={onPostDelete} />
       ))}
     </div>
   );

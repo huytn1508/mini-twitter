@@ -8,7 +8,6 @@ export default function CommentForm({ postId, onCommentAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!content.trim() || submitting) return;
-
     setSubmitting(true);
     try {
       const res = await commentsAPI.create(postId, content.trim());
@@ -29,12 +28,16 @@ export default function CommentForm({ postId, onCommentAdded }) {
         onChange={(e) => setContent(e.target.value)}
         placeholder="Viết bình luận..."
         maxLength={280}
-        className="input-field py-2 text-sm flex-1"
+        className="flex-1 px-4 py-2 text-sm border border-neutral-200 rounded-full
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500
+                   placeholder:text-neutral-400 bg-neutral-50 transition-all"
       />
       <button
         type="submit"
         disabled={!content.trim() || submitting}
-        className="btn-primary text-xs px-3 py-2"
+        className="bg-indigo-600 text-white px-5 py-2 rounded-full text-sm font-medium
+                   hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed
+                   transition-all active:scale-[0.98]"
       >
         {submitting ? '...' : 'Gửi'}
       </button>

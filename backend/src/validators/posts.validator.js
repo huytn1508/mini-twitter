@@ -18,4 +18,13 @@ const updatePostSchema = Joi.object({
     }),
 });
 
-module.exports = { createPostSchema, updatePostSchema };
+const quoteSchema = Joi.object({
+  content: Joi.string().min(1).max(280).required()
+    .messages({
+      'string.min': 'Caption không được để trống',
+      'string.max': 'Caption không được vượt quá 280 ký tự',
+      'any.required': 'Caption là bắt buộc',
+    }),
+});
+
+module.exports = { createPostSchema, updatePostSchema, quoteSchema };

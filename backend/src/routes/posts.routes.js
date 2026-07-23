@@ -1,32 +1,32 @@
 const router = require('express').Router();
 const postsController = require('../controllers/posts.controller');
 const validate = require('../middleware/validate');
-const { createPostSchema, updatePostSchema } = require('../validators/posts.validator');
+const { createPostSchema, updatePostSchema, quoteSchema } = require('../validators/posts.validator');
 const { authenticate, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-// GET /api/posts — Newsfeed tất cả (public, optional auth để biết user đã like chưa)
+// GET /api/posts — Newsfeed
 router.get('/', optionalAuth, postsController.getAll);
 
-// GET /api/posts/following — Feed người mình follow (cần auth)
+// GET /api/posts/following
 router.get('/following', authenticate, postsController.getFollowing);
 
-// POST /api/posts — Tạo bài viết mới
-router.post(
-  '/',
-  authenticate,
-  upload.single('image'),
-  validate(createPostSchema, 'body'),
-  postsController.create
-);
+// POST /api/posts — Tạo bài viết
+router.post('/', authenticate, upload.single('image'), validate(createPostSchema, 'body'), postsController.create);
 
-// GET /api/posts/:id — Chi tiết bài viết
+// POST /api/posts/:id/retweet
+router.post('/:id/retweet', authenticate, postsController.retweet);
+
+// POST /api/posts/:id/quote
+router.post('/:id/quote', authenticate, validate(quoteSchema), postsController.quoteRetweet);
+
+// GET /api/posts/:id
 router.get('/:id', optionalAuth, postsController.getById);
 
-// PUT /api/posts/:id — Sửa bài viết
+// PUT /api/posts/:id
 router.put('/:id', authenticate, validate(updatePostSchema), postsController.update);
 
-// DELETE /api/posts/:id — Xóa bài viết
+// DELETE /api/posts/:id
 router.delete('/:id', authenticate, postsController.remove);
 
 module.exports = router;

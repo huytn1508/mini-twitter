@@ -9,4 +9,6 @@ export const postsAPI = {
   }),
   update: (id, data) => client.put(`/posts/${id}`, data),
   delete: (id) => client.delete(`/posts/${id}`),
+  retweet: (id) => client.post(`/posts/${id}/retweet`),
+  quote: (id, content) => client.post(`/posts/${id}/quote`, { content }),
 };

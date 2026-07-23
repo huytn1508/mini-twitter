@@ -380,4 +380,128 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { getAll, getFollowing, create, getById, update, remove };
+/**
+ * POST /api/posts/:id/retweet
+ * Retweet thuần (không caption)
+ */
+async function retweet(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    // Kiểm tra post gốc tồn tại
+    const { data: original } = await supabaseAdmin
+      .from('posts').select('id').eq('id', id).single();
+    if (!original) return res.status(404).json({ error: 'Không tìm thấy bài viết' });
+
+    // Tạo post retweet (không content)
+    const { data: post, error } = await supabaseAdmin
+      .from('posts')
+      .insert({
+        user_id: req.user.id,
+        content: '',
+        retweet_type: 'retweet',
+        retweet_post_id: parseInt(id),
+        retweet_user_id: req.user.id,
+      })
+      .select(`*, profiles:user_id (username, display_name, avatar_url)`)
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json({ message: 'Đã retweet', post: formatPostWithRetweet(post, req.user) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/posts/:id/quote
+ * Quote tweet (có caption)
+ */
+async function quoteRetweet(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+
+    const { data: original } = await supabaseAdmin
+      .from('posts').select('id').eq('id', id).single();
+    if (!original) return res.status(404).json({ error: 'Không tìm thấy bài viết' });
+
+    const { data: post, error } = await supabaseAdmin
+      .from('posts')
+      .insert({
+        user_id: req.user.id,
+        content,
+        retweet_type: 'quote',
+        retweet_post_id: parseInt(id),
+        retweet_user_id: req.user.id,
+      })
+      .select(`*, profiles:user_id (username, display_name, avatar_url)`)
+      .single();
+
+    if (error) throw error;
+
+    // Sync hashtags cho quote
+    const hashtags = await syncPostHashtags(post.id, content);
+
+    res.status(201).json({ message: 'Đã quote', post: { ...formatPostWithRetweet(post, req.user), hashtags } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Format post có kèm retweet info
+ */
+async function formatPostWithRetweet(post, authUser) {
+  const formatted = {
+    id: post.id,
+    content: post.content,
+    image_url: post.image_url,
+    created_at: post.created_at,
+    retweet_type: post.retweet_type || null,
+    user: post.profiles ? {
+      id: post.user_id,
+      username: post.profiles.username,
+      display_name: post.profiles.display_name,
+      avatar_url: post.profiles.avatar_url,
+    } : null,
+    likes_count: 0,
+    comments_count: 0,
+    is_liked: false,
+    retweet: null,
+  };
+
+  // Nếu là retweet, lấy thông tin post gốc
+  if (post.retweet_post_id) {
+    const { data: original } = await supabaseAdmin
+      .from('posts')
+      .select(`*, profiles:user_id (username, display_name, avatar_url), likes (user_id), comments (id)`)
+      .eq('id', post.retweet_post_id)
+      .single();
+
+    if (original) {
+      formatted.retweet = {
+        original_post: {
+          id: original.id,
+          content: original.content,
+          image_url: original.image_url,
+          created_at: original.created_at,
+          user: {
+            id: original.user_id,
+            username: original.profiles?.username,
+            display_name: original.profiles?.display_name,
+            avatar_url: original.profiles?.avatar_url,
+          },
+          likes_count: original.likes?.length || 0,
+          comments_count: original.comments?.length || 0,
+          is_liked: authUser ? original.likes?.some(l => l.user_id === authUser.id) : false,
+        },
+      };
+    }
+  }
+
+  return formatted;
+}
+
+module.exports = { getAll, getFollowing, create, getById, update, remove, retweet, quoteRetweet };

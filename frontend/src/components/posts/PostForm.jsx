@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { HiPhotograph, HiX, HiEmojiHappy, HiOutlineFilm, HiClock, HiEyeOff, HiSearch } from 'react-icons/hi';
+import { HiPhotograph, HiX, HiEmojiHappy, HiOutlineFilm, HiClock, HiEyeOff, HiSearch, HiVideoCamera } from 'react-icons/hi';
 import EmojiPicker from 'emoji-picker-react';
 import { postsAPI } from '../../api/posts';
 import { useAuth } from '../../context/AuthContext';
@@ -25,24 +25,49 @@ export default function PostForm({ onPostCreated }) {
   const [gifError, setGifError] = useState('');
   const [gifUrl, setGifUrl] = useState(null);        // URL gốc lưu vào DB
   const [gifPreview, setGifPreview] = useState(null); // URL preview trong compose
+  const [video, setVideo] = useState(null);           // File video
+  const [videoPreview, setVideoPreview] = useState(null); // URL preview
   const [isSensitive, setIsSensitive] = useState(false);
   const [scheduleDate, setScheduleDate] = useState('');
   const fileInputRef = useRef(null);
 
   const charsLeft = MAX_CHARS - content.length;
 
-  // ── Images ──────────────────────────────────────────────────
-  const handleImageSelect = (e) => {
+  // ── Media (Ảnh + Video) ─────────────────────────────────────
+  const handleMediaSelect = (e) => {
     const files = Array.from(e.target.files || []);
-    if (images.length + files.length > 4) { setError('Tối đa 4 ảnh'); return; }
-    files.forEach(f => {
-      if (!f.type.startsWith('image/')) return;
-      if (f.size > 5 * 1024 * 1024) { setError('Ảnh không được vượt quá 5MB'); return; }
-      setImages(prev => [...prev, f]);
-      setImagePreviews(prev => [...prev, URL.createObjectURL(f)]);
-    });
-    // Chọn ảnh → xoá GIF nếu có
-    if (files.length > 0) { setGifUrl(null); setGifPreview(null); }
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    const videoFile = files.find(f => f.type.startsWith('video/'));
+
+    // Video: chỉ 1, thay thế ảnh + GIF
+    if (videoFile) {
+      if (videoFile.size > 100 * 1024 * 1024) { setError('Video không được vượt quá 100MB'); return; }
+      if (videoPreview) URL.revokeObjectURL(videoPreview);
+      imagePreviews.forEach(p => URL.revokeObjectURL(p));
+      setVideo(videoFile);
+      setVideoPreview(URL.createObjectURL(videoFile));
+      setImages([]);
+      setImagePreviews([]);
+      setGifUrl(null);
+      setGifPreview(null);
+      setError('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Ảnh: tối đa 4, chỉ nhận nếu chưa có video
+    if (imageFiles.length > 0) {
+      if (video) { setError('Chỉ được chọn ảnh hoặc video, không phải cả hai'); return; }
+      if (images.length + imageFiles.length > 4) { setError('Tối đa 4 ảnh'); return; }
+      imageFiles.forEach(f => {
+        if (f.size > 5 * 1024 * 1024) { setError('Ảnh không được vượt quá 5MB'); return; }
+        setImages(prev => [...prev, f]);
+        setImagePreviews(prev => [...prev, URL.createObjectURL(f)]);
+      });
+      // Chọn ảnh → xoá GIF
+      setGifUrl(null);
+      setGifPreview(null);
+    }
     setError('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -51,6 +76,12 @@ export default function PostForm({ onPostCreated }) {
     URL.revokeObjectURL(imagePreviews[i]);
     setImages(prev => prev.filter((_, idx) => idx !== i));
     setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setVideo(null);
+    setVideoPreview(null);
   };
 
   // ── Emoji ───────────────────────────────────────────────────
@@ -119,10 +150,13 @@ export default function PostForm({ onPostCreated }) {
     setShowGif(false);
     setGifSearch('');
     setGifResults([]);
-    // Xoá ảnh đã chọn (ràng buộc: GIF HOẶC ảnh)
+    // Xoá ảnh + video (ràng buộc: GIF HOẶC ảnh HOẶC video)
     imagePreviews.forEach(p => URL.revokeObjectURL(p));
     setImages([]);
     setImagePreviews([]);
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setVideo(null);
+    setVideoPreview(null);
   };
 
   const removeGif = () => {
@@ -134,9 +168,9 @@ export default function PostForm({ onPostCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const validationError = validatePostContent(content);
-    if (validationError && images.length === 0 && !gifUrl) { setError(validationError); return; }
-    if (!content.trim() && images.length === 0 && !gifUrl) { setError('Vui lòng nhập nội dung hoặc thêm ảnh/GIF'); return; }
+    const hasMedia = images.length > 0 || !!gifUrl || !!video;
+    if (validationError && !hasMedia) { setError(validationError); return; }
+    if (!content.trim() && !hasMedia) { setError('Vui lòng nhập nội dung hoặc thêm ảnh/video/GIF'); return; }
     setPosting(true);
     try {
       const formData = new FormData();
@@ -144,10 +178,13 @@ export default function PostForm({ onPostCreated }) {
       if (isSensitive) formData.append('is_sensitive', 'true');
       if (scheduleDate) formData.append('scheduled_at', new Date(scheduleDate).toISOString());
 
-      // Upload ảnh (nếu không có GIF)
-      if (!gifUrl) {
+      // Upload ảnh (nếu không có GIF/video)
+      if (!gifUrl && !video) {
         images.forEach(img => formData.append('images', img));
       }
+
+      // Video
+      if (video) formData.append('video', video);
 
       // GIF URL
       if (gifUrl) formData.append('gif_url', gifUrl);
@@ -159,6 +196,9 @@ export default function PostForm({ onPostCreated }) {
       setImagePreviews([]);
       setGifUrl(null);
       setGifPreview(null);
+      if (videoPreview) URL.revokeObjectURL(videoPreview);
+      setVideo(null);
+      setVideoPreview(null);
       setIsSensitive(false);
       setScheduleDate('');
       onPostCreated?.(res.data.post);
@@ -179,6 +219,21 @@ export default function PostForm({ onPostCreated }) {
               placeholder="Bạn đang nghĩ gì?" rows={3}
               className="w-full resize-none border-0 focus:ring-0 text-[15px] text-neutral-800 placeholder:text-neutral-400 bg-transparent outline-none leading-relaxed"
               maxLength={MAX_CHARS + 50} />
+
+            {/* Video preview */}
+            {videoPreview && (
+              <div className="relative mt-2 max-w-sm">
+                <video src={videoPreview} controls muted autoPlay loop playsInline
+                  className="rounded-xl max-h-64 w-full object-contain bg-black" />
+                <span className="absolute bottom-2 left-2 bg-neutral-900/75 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm tracking-wider select-none">
+                  VIDEO
+                </span>
+                <button type="button" onClick={removeVideo}
+                  className="absolute top-1.5 right-1.5 bg-neutral-900/70 text-white rounded-full p-1 hover:bg-neutral-900">
+                  <HiX className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* Image previews */}
             {imagePreviews.length > 0 && (
@@ -228,18 +283,18 @@ export default function PostForm({ onPostCreated }) {
             {/* Actions */}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 flex-wrap gap-2">
               <div className="flex items-center gap-1">
-                <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden" />
+                <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" />
                 <button type="button" onClick={() => fileInputRef.current?.click()}
-                  disabled={!!gifUrl}
-                  className={`p-2 rounded-full transition-all ${gifUrl ? 'text-neutral-300 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'}`} title="Thêm ảnh">
+                  disabled={!!gifUrl || !!video}
+                  className={`p-2 rounded-full transition-all ${(gifUrl || video) ? 'text-neutral-300 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'}`} title="Thêm ảnh/video">
                   <HiPhotograph className="w-5 h-5" />
                 </button>
 
                 {/* GIF button — styled like X with "GIF" text */}
                 <button type="button" onClick={openGifPicker}
-                  disabled={images.length > 0}
+                  disabled={images.length > 0 || !!video}
                   className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wide transition-all ${
-                    images.length > 0
+                    (images.length > 0 || video)
                       ? 'text-neutral-300 cursor-not-allowed bg-neutral-50'
                       : gifUrl
                         ? 'text-indigo-700 bg-indigo-100'
@@ -284,7 +339,7 @@ export default function PostForm({ onPostCreated }) {
                 <span className={`text-xs font-medium ${charsLeft < 0 ? 'text-rose-500' : charsLeft < 20 ? 'text-amber-500' : 'text-neutral-400'}`}>
                   {content.length > 0 ? charsLeft : ''}
                 </span>
-                <button type="submit" disabled={posting || (!content.trim() && images.length === 0 && !gifUrl) || charsLeft < 0}
+                <button type="submit" disabled={posting || (!content.trim() && images.length === 0 && !gifUrl && !video) || charsLeft < 0}
                   className="btn-primary !py-2 !px-5 !text-sm">
                   {posting ? 'Đang đăng...' : scheduleDate ? 'Lên lịch' : 'Đăng'}
                 </button>

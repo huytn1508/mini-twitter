@@ -11,8 +11,11 @@ router.get('/', optionalAuth, postsController.getAll);
 // GET /api/posts/following
 router.get('/following', authenticate, postsController.getFollowing);
 
-// POST /api/posts — Tạo bài viết
-router.post('/', authenticate, upload.array('images', 4), validate(createPostSchema, 'body'), postsController.create);
+// POST /api/posts — Tạo bài viết (ảnh: tối đa 4, video: tối đa 1)
+router.post('/', authenticate, upload.fields([
+  { name: 'images', maxCount: 4 },
+  { name: 'video', maxCount: 1 },
+]), validate(createPostSchema, 'body'), postsController.create);
 
 // POST /api/posts/:id/retweet
 router.post('/:id/retweet', authenticate, postsController.retweet);

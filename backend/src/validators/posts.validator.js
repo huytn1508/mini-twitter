@@ -1,11 +1,9 @@
 const Joi = require('joi');
 
 const createPostSchema = Joi.object({
-  content: Joi.string().min(1).max(280).required()
+  content: Joi.string().min(0).max(280).allow('').optional()
     .messages({
-      'string.min': 'Nội dung không được để trống',
       'string.max': 'Nội dung không được vượt quá 280 ký tự',
-      'any.required': 'Nội dung bài viết là bắt buộc',
     }),
 });
 

@@ -38,6 +38,34 @@ async function uploadImage(file) {
 }
 
 /**
+ * Upload video lên Supabase Storage.
+ * Không xử lý qua sharp (sharp không hỗ trợ video).
+ * Trả về public URL.
+ */
+async function uploadVideo(file) {
+  if (!file) return null;
+
+  const ext = file.mimetype === 'video/quicktime' ? '.mov' :
+              file.mimetype === 'video/webm' ? '.webm' : '.mp4';
+  const filename = `videos/${uuidv4()}${ext}`;
+
+  const { error } = await supabaseAdmin.storage
+    .from('images')
+    .upload(filename, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
+
+  if (error) throw error;
+
+  const { data } = supabaseAdmin.storage
+    .from('images')
+    .getPublicUrl(filename);
+
+  return data.publicUrl;
+}
+
+/**
  * GET /api/posts
  * Newsfeed tất cả bài viết, sắp xếp mới nhất.
  * Hỗ trợ phân trang: ?page=1&limit=20
@@ -186,33 +214,45 @@ async function getFollowing(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    // Upload nhiều ảnh nếu có
+    const { content, is_sensitive, scheduled_at, gif_url } = req.body;
+
+    // Upload ảnh + video từ req.files (fields: images[], video[0])
     let imageUrl = null;
     const images = [];
-    if (req.files?.length > 0) {
-      for (const file of req.files) {
+    let videoUrl = null;
+
+    const imageFiles = req.files?.images || [];
+    const videoFile = req.files?.video?.[0] || null;
+
+    if (imageFiles.length > 0) {
+      for (const file of imageFiles) {
         const url = await uploadImage(file);
         images.push(url);
       }
-      imageUrl = images[0]; // Backward compat
+      imageUrl = images[0];
     }
 
-    const { content, is_sensitive, scheduled_at, gif_url } = req.body;
+    if (videoFile) {
+      videoUrl = await uploadVideo(videoFile);
+    }
+
     const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
 
-    // GIF hoặc ảnh, không phải cả hai
-    const finalGifUrl = gif_url?.trim() || null;
-    const finalImages = finalGifUrl ? [] : (images.length > 0 ? images : null);
-    const finalImageUrl = finalGifUrl ? null : (imageUrl || null);
+    // Ràng buộc: video HOẶC ảnh HOẶC GIF (ưu tiên video > GIF > ảnh)
+    const finalVideoUrl = videoUrl || null;
+    const finalGifUrl = finalVideoUrl ? null : (gif_url?.trim() || null);
+    const finalImages = (finalVideoUrl || finalGifUrl) ? null : (images.length > 0 ? images : null);
+    const finalImageUrl = (finalVideoUrl || finalGifUrl) ? null : (imageUrl || null);
 
     const { data: post, error } = await supabaseAdmin
       .from('posts')
       .insert({
         user_id: req.user.id,
-        content,
+        content: content?.trim() || '',
         image_url: finalImageUrl,
         images: finalImages,
         gif_url: finalGifUrl,
+        video_url: finalVideoUrl,
         is_sensitive: is_sensitive === 'true' || is_sensitive === true,
         scheduled_at: scheduled_at || null,
         is_published: !isScheduled,
@@ -236,6 +276,7 @@ async function create(req, res, next) {
         image_url: post.image_url,
         images: post.images || [],
         gif_url: post.gif_url || null,
+        video_url: post.video_url || null,
         is_sensitive: post.is_sensitive || false,
         created_at: post.created_at,
         user: {
@@ -376,6 +417,7 @@ async function update(req, res, next) {
         image_url: post.image_url,
         images: post.images || [],
         gif_url: post.gif_url || null,
+        video_url: post.video_url || null,
         is_sensitive: post.is_sensitive || false,
         created_at: post.created_at,
         user: {

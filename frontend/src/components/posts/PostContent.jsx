@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
  * Tách text thành mảng các segment (text | hashtag | mention).
  */
 export default function PostContent({ content, className = '' }) {
-  if (!content) return null;
+  if (!content || typeof content !== 'string') return null;
 
   // Regex khớp #hashtag hoặc @username
   const regex = /(#\w+|@\w+)/g;

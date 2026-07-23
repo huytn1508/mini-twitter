@@ -19,7 +19,7 @@ export default function HomePage() {
     try {
       const fetcher = tab === 'following' ? postsAPI.getFollowing : postsAPI.getAll;
       const res = await fetcher(pageNum);
-      const newPosts = res.data.posts;
+      const newPosts = res.data?.posts || [];
       setPosts(prev => append ? [...prev, ...newPosts] : newPosts);
     } catch (err) {
       setError(err.response?.data?.error || 'Không thể tải bài viết');
